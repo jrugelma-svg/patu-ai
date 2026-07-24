@@ -1,7 +1,6 @@
-import os
-from google import genai
+import google.generativeai as genai
 
-# Usamos el modelo con la mayor cuota gratuita disponible
+# Usamos el modelo estándar y estable
 MODEL_NAME = 'gemini-1.5-flash'
 
 def analizar_caso_inicial(texto_caso, api_key):
@@ -10,7 +9,8 @@ def analizar_caso_inicial(texto_caso, api_key):
     y detecta las brechas de información (síntomas faltantes).
     """
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(MODEL_NAME)
         
         prompt = f"""
         Actúa como un Supervisor Clínico y Experto en Diagnóstico DSM-5-TR / CIE-10.
@@ -31,13 +31,10 @@ def analizar_caso_inicial(texto_caso, api_key):
         * Sugiere 2 o 3 preguntas clave para la entrevista clínica.
         """
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"⚠️ Error de API/Cuota: {str(e)}"
+        return f"⚠️ Error de API/Conexión: {str(e)}"
 
 
 def obtener_pruebas_psicometricas(texto_caso, api_key):
@@ -45,7 +42,8 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
     Genera la batería de pruebas psicométricas recomendadas para el caso.
     """
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(MODEL_NAME)
         
         prompt = f"""
         Como experto en Evaluación y Psicometría Clínica, analiza este caso:
@@ -62,10 +60,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
           * **Propósito en este caso:** (Qué síntoma o sospecha ayuda a descartar/confirmar).
         """
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return f"⚠️ Error al generar pruebas: {str(e)}"
@@ -76,7 +71,8 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
     Estructura la evaluación bajo los 5 Ejes del DSM.
     """
     try:
-        client = genai.Client(api_key=api_key)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(MODEL_NAME)
         
         prompt = f"""
         Con base en la narrativa clínica original y los datos contextuales adicionales brindados, formula una evaluación bajo el esquema del Diagnóstico Multiaxial (DSM-IV-TR / Adaptación DSM-5).
@@ -97,10 +93,7 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
         * **Eje V: Evaluación de la Actividad Global (Escala EEAG / GAF estimada de 1 a 100 y justificación).**
         """
 
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
-        )
+        response = model.generate_content(prompt)
         return response.text
     except Exception as e:
         return f"⚠️ Error al formular diagnóstico multiaxial: {str(e)}"
