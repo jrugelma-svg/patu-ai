@@ -1,24 +1,29 @@
 import requests
 import json
 
-def llamar_gemini_directo(prompt, api_key):
+# Usamos el modelo estrella de Groq (Llama 3.3 70B)
+MODEL_NAME = "llama-3.3-70b-versatile"
+
+def llamar_groq_api(prompt, api_key):
     """
-    Llama directamente a la API REST de Gemini evitando problemas de librerías y versiones.
+    Realiza una solicitud HTTP directa a la API de Groq.
     """
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    url = "https://api.groq.com/openai/v1/chat/completions"
     
     headers = {
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
     payload = {
-        "contents": [
+        "model": MODEL_NAME,
+        "messages": [
             {
-                "parts": [
-                    {"text": prompt}
-                ]
+                "role": "user",
+                "content": prompt
             }
-        ]
+        ],
+        "temperature": 0.3
     }
     
     try:
@@ -26,10 +31,10 @@ def llamar_gemini_directo(prompt, api_key):
         data = response.json()
         
         if response.status_code == 200:
-            return data['candidates'][0]['content']['parts'][0]['text']
+            return data['choices'][0]['message']['content']
         else:
             error_msg = data.get('error', {}).get('message', 'Error desconocido')
-            return f"⚠️ Error de la API ({response.status_code}): {error_msg}"
+            return f"⚠️ Error en API de Groq ({response.status_code}): {error_msg}"
             
     except Exception as e:
         return f"⚠️ Error de conexión: {str(e)}"
@@ -54,7 +59,7 @@ def analizar_caso_inicial(texto_caso, api_key):
     * Enumera los síntomas, duración, contexto o criterios que Hacen Falta Observar o Indagar para confirmar/descartar la hipótesis.
     * Sugiere 2 o 3 preguntas clave para la entrevista clínica.
     """
-    return llamar_gemini_directo(prompt, api_key)
+    return llamar_groq_api(prompt, api_key)
 
 
 def obtener_pruebas_psicometricas(texto_caso, api_key):
@@ -62,7 +67,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
     Como experto en Evaluación y Psicometría Clínica, analiza este caso:
     "{texto_caso}"
 
-    Genera una lista de pruebas psicométricas, escalas o test validados recomendados para evaluar o descartar las hipótesis clínicas de este caso.
+    Genera una lista de pruebas psicometricas, escalas o test validados recomendados para evaluar o descartar las hipótesis clínicas de este caso.
 
     PRESENTA LOS RESULTADOS EN EL SIGUIENTE FORMATO MARKDOWN:
     ### 🧪 Batería de Pruebas Psicométricas Recomendadas
@@ -72,7 +77,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
       * **Objetivo / Para qué sirve:** (Breve descripción).
       * **Propósito en este caso:** (Qué síntoma o sospecha ayuda a descartar/confirmar).
     """
-    return llamar_gemini_directo(prompt, api_key)
+    return llamar_groq_api(prompt, api_key)
 
 
 def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
@@ -94,4 +99,4 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
     * **Eje IV: Problemas Psicosociales y Ambientales (Estresores principales).**
     * **Eje V: Evaluación de la Actividad Global (Escala EEAG / GAF estimada de 1 a 100 y justificación).**
     """
-    return llamar_gemini_directo(prompt, api_key)
+    return llamar_groq_api(prompt, api_key)
