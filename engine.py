@@ -29,7 +29,7 @@ def analizar_caso_inicial(texto_caso, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=prompt,
         )
         return response.text
@@ -60,7 +60,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=prompt,
         )
         return response.text
@@ -95,7 +95,7 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-1.5-flash',
             contents=prompt,
         )
         return response.text
