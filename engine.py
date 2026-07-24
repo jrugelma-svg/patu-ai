@@ -1,6 +1,9 @@
 import os
 from google import genai
 
+# Definimos el modelo estándar de la nueva SDK
+MODEL_NAME = 'gemini-2.0-flash'
+
 def analizar_caso_inicial(texto_caso, api_key):
     """
     Realiza el análisis inicial de semejanza diagnóstica DSM-5-TR
@@ -29,7 +32,7 @@ def analizar_caso_inicial(texto_caso, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-1.5-flash-8b',
+            model=MODEL_NAME,
             contents=prompt,
         )
         return response.text
@@ -60,7 +63,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-1.5-flash-8b',
+            model=MODEL_NAME,
             contents=prompt,
         )
         return response.text
@@ -95,7 +98,7 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
         """
 
         response = client.models.generate_content(
-            model='gemini-1.5-flash-8b',
+            model=MODEL_NAME,
             contents=prompt,
         )
         return response.text
