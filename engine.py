@@ -1,7 +1,7 @@
 import google.generativeai as genai
 
-# Usamos el modelo estándar y estable
-MODEL_NAME = 'gemini-1.5-flash'
+# Usamos el identificador del modelo
+MODEL_NAME = 'gemini-2.0-flash'
 
 def analizar_caso_inicial(texto_caso, api_key):
     """
