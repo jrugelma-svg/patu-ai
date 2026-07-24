@@ -172,3 +172,21 @@ if st.session_state.analisis_hecho:
                 multi_res = generar_diagnostico_multiaxial(caso_texto, datos_extra, api_key)
                 st.markdown(multi_res)
         st.markdown("</div>", unsafe_allow_html=True)
+# ---------------------------------------------------------
+# 8. Pie de página y Aviso de Copyright / Nota Legal
+# ---------------------------------------------------------
+st.markdown("---")
+
+footer_code = """
+<div style="text-align: center; color: #888888; padding: 10px; font-size: 0.85rem;">
+    <p>© 2026 <b>PATU AI</b>. Todos los derechos reservados.</p>
+    <p><b>Creador y Titular de Propiedad Intelectual:</b> J. Rugel</p>
+    <hr style="border: 0.5px solid #333333; margin: 10px auto; width: 50%;">
+    <p style="font-size: 0.75rem; color: #aaaaaa;">
+        <b>Aviso Legal / Disclaimer:</b> PATU AI es un sistema de apoyo y consulta clínica basado en Inteligencia Artificial. 
+        No emite diagnósticos médicos definitivos ni sustituye el criterio ni la evaluación clínica de un profesional de la salud mental colegiado.
+    </p>
+</div>
+"""
+
+st.markdown(footer_code, unsafe_allow_html=True)
