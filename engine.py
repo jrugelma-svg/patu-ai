@@ -1,8 +1,8 @@
 import os
 from google import genai
 
-# Definimos el modelo estándar de la nueva SDK
-MODEL_NAME = 'gemini-2.0-flash'
+# Usamos el modelo con la mayor cuota gratuita disponible
+MODEL_NAME = 'gemini-1.5-flash'
 
 def analizar_caso_inicial(texto_caso, api_key):
     """
@@ -37,7 +37,7 @@ def analizar_caso_inicial(texto_caso, api_key):
         )
         return response.text
     except Exception as e:
-        return f"⚠️ Error al conectar con Gemini: {str(e)}"
+        return f"⚠️ Error de API/Cuota: {str(e)}"
 
 
 def obtener_pruebas_psicometricas(texto_caso, api_key):
