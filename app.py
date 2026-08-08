@@ -20,7 +20,7 @@ def get_image_base64(path):
 
 img_base64 = get_image_base64("logo.jpg")
 
-# 3. Estilos CSS Personalizados con integración de fondo exacto y bordes rosados
+# 3. Estilos CSS Personalizados con bordes rosados y tarjeta Premium
 custom_css = """
 <style>
     /* Ocultar elementos predeterminados de Streamlit */
@@ -51,7 +51,18 @@ custom_css = """
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     }
 
-    /* Contenedor del Logo sin tarjeta ni bordes */
+    /* Tarjeta Premium Especial */
+    .premium-card {
+        background: linear-gradient(135deg, #FFFFFF 0%, #FFF5F7 100%);
+        border: 2px solid #FDA4AF;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 15px rgba(225, 29, 72, 0.06);
+        position: relative;
+    }
+
+    /* Contenedor del Logo */
     .logo-container {
         background: transparent !important;
         text-align: center;
@@ -86,6 +97,20 @@ custom_css = """
         border-radius: 50%;
     }
 
+    /* Insignia Premium */
+    .premium-badge {
+        background: linear-gradient(90deg, #E11D48, #FB7185);
+        color: #FFFFFF !important;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-block;
+        margin-bottom: 8px;
+    }
+
     /* Campo de Texto (Textarea) */
     .stTextArea textarea {
         background-color: #FFFFFF !important;
@@ -100,9 +125,7 @@ custom_css = """
         box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
     }
 
-    /* =========================================================
-       ESTILO GENERAL DE BOTONES CON BORDES ROSADOS
-       ========================================================= */
+    /* ESTILO GENERAL DE BOTONES CON BORDES ROSADOS */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 600 !important;
@@ -124,7 +147,7 @@ custom_css = """
         transform: translateY(-1px);
     }
 
-    /* Botones Secundarios (Pruebas y Diagnóstico) */
+    /* Botones Secundarios */
     .stButton > button[kind="secondary"] {
         background: #FFFFFF !important;
         color: #9F1239 !important;
@@ -165,7 +188,7 @@ col_izquierda, col_derecha = st.columns([0.38, 0.62], gap="large")
 # COLUMNA IZQUIERDA: Panel de Entrada y Acciones
 # =========================================================
 with col_izquierda:
-    # Encabezado / Logo totalmente integrado sin contenedor
+    # Encabezado / Logo
     logo_html = f'<img src="data:image/jpeg;base64,{img_base64}" class="logo-img">' if img_base64 else '<b>PATU AI</b>'
     
     st.markdown(f'''
@@ -183,7 +206,7 @@ with col_izquierda:
     </div>
     ''', unsafe_allow_html=True)
 
-    # Bloque Formulario de Entrada
+    # Bloque 1: Formulario de Entrada
     st.markdown('<div class="split-card">', unsafe_allow_html=True)
     st.subheader("📝 Motivo de Consulta")
     st.caption("Escribe la narrativa clínica del paciente:")
@@ -198,9 +221,14 @@ with col_izquierda:
     btn_analizar = st.button("🚀 Analizar Caso Clínico", type="primary", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Herramientas Complementarias directas
-    st.markdown("#### 🛠️ Módulos a Demanda")
-    st.caption("Genera evaluaciones específicas en el panel derecho:")
+    # Bloque 2: Módulos a Demanda (Tercer Cuadro con versión PREMIUM)
+    st.markdown('''
+    <div class="premium-card">
+        <span class="premium-badge">⭐ Módulos Premium</span>
+        <h4 style="margin: 4px 0 2px 0;">🛠️ Evaluaciones Avanzadas</h4>
+        <p style="font-size: 0.85rem; color: #64748B !important; margin-bottom: 12px;">Genera reportes técnicos especializados a demanda:</p>
+    </div>
+    ''', unsafe_allow_html=True)
     
     btn_pruebas = st.button("🧪 Sugerir Pruebas Psicométricas", type="secondary", use_container_width=True)
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
