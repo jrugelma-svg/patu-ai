@@ -100,3 +100,85 @@ def generar_diagnostico_multiaxial(texto_caso, datos_extra, api_key):
     * **Eje V: Evaluación de la Actividad Global (Escala EEAG / GAF estimada de 1 a 100 y justificación).**
     """
     return llamar_groq_api(prompt, api_key)
+
+
+# =========================================================
+# FUNCIONES PREMIUM: REDACCIÓN DE INFORMES Y RECURSOS
+# =========================================================
+
+def generar_informe_premium(datos: dict, enfoque: str, api_key: str):
+    """
+    Transforma apuntes breves, frases sueltas o borradores en un Informe Psicológico
+    formal con terminología técnica rigurosa adaptada al enfoque seleccionado.
+    """
+    instrucciones_enfoque = {
+        "Clínico": "Énfasis en psicopatología (DSM-5-TR / CIE-11), estado mental, sintomatología, diagnóstico presuntivo y plan de intervención psicoterapéutico.",
+        "Educativo": "Énfasis en estilos de aprendizaje, rendimiento académico, adaptación socioemocional escolar/universitaria, necesidades educativas (NEE) y pautas psicoeducativas.",
+        "Organizacional": "Énfasis en competencias laborales, desempeño, perfil conductual, adecuación al puesto, manejo del estrés ocupacional y recomendaciones de desarrollo."
+    }
+    
+    prompt = f"""
+    Actúas como un Psicólogo Senior especialista en redacción técnica e informes profesionales.
+    Tu objetivo es tomar los siguientes datos (que pueden contener notas sintéticas, frases sueltas o borradores) y redactar un **INFORME PSICOLÓGICO PROFESIONAL Y COMPLETO**.
+
+    **ENFOQUE REQUERIDO:** {enfoque.upper()}
+    **DIRECTRIZ DEL ENFOQUE:** {instrucciones_enfoque.get(enfoque, "Redacción clínica profesional.")}
+
+    **DATOS DEL PACIENTE / EVALUADO:**
+    - Nombre / Iniciales: {datos.get('nombre', 'No especificado')}
+    - Edad: {datos.get('edad', 'No especificada')}
+    - Sexo / Género: {datos.get('genero', 'No especificado')}
+    - Ocupación / Escolaridad: {datos.get('ocupacion', 'No especificada')}
+
+    **NOTAS Y APUNTES BRUTOS APORTADOS POR EL PROFESIONAL (PULIR, ENRIQUECER Y TRANSFORMAR CON LENGUAJE TÉCNICO):**
+    1. Motivo de Consulta: {datos.get('motivo', 'No detallado')}
+    2. Problema Actual / Antecedentes: {datos.get('problema_actual', 'No detallado')}
+    3. Pruebas / Instrumentos Aplicados: {datos.get('pruebas_aplicadas', 'No detallado')}
+    4. Observaciones Conductuales: {datos.get('observaciones', 'No detalladas')}
+    5. Impresión Diagnóstica / Conclusiones: {datos.get('diagnostico', 'No detallado')}
+
+    ---
+    **REGLAS DE REDACCIÓN:**
+    - Aunque el usuario haya escrito solo dos o tres palabras sueltas en algún campo, utiliza tu conocimiento clínico para redactar párrafos fluidos, elegantes y con terminología técnica experta.
+    - Mantén una estructura rigurosa en Markdown utilizando los siguientes apartados:
+
+    # 📄 INFORME PSICOLÓGICO ({enfoque.upper()})
+
+    ### I. DATOS DE FILIACIÓN
+    ### II. MOTIVO DE CONSULTA
+    ### III. HISTORIA DEL PROBLEMA Y ANTECEDENTES
+    ### IV. OBSERVACIONES DE LA CONDUCTA
+    ### V. INSTRUMENTOS DE EVALUACIÓN APLICADOS
+    ### VI. RESULTADOS E IMPRESIÓN DIAGNÓSTICA
+    ### VII. RECOMENDACIONES Y PLAN DE ACCIÓN
+    """
+    
+    return llamar_groq_api(prompt, api_key)
+
+
+def buscar_recursos_pruebas(nombre_prueba: str, api_key: str):
+    """
+    Busca ficha técnica, enlaces de consulta y fuentes de referencia para aplicar la prueba psicométrica.
+    """
+    prompt = f"""
+    Actúas como un experto en Psicometría y Evaluación Psicológica.
+    El usuario busca información y fuentes para aplicar o consultar la siguiente prueba/test o tema psicométrico: "{nombre_prueba}".
+
+    Proporciona una respuesta clara en Markdown estructurada así:
+
+    ### 🧪 Ficha Técnica y Enlaces de Consulta: {nombre_prueba}
+
+    * **📋 Ficha Técnica Rápida:**
+      * **Nombre Oficial / Acrónimo:** 
+      * **Autor(es) / Año:** 
+      * **Edad de Aplicación:** 
+      * **Objetivo Principal:** 
+
+    * **📊 Escalas / Dimensiones que Mide:** (Describe brevemente sus componentes).
+
+    * **🔗 Dónde Consultar o Adquirir el Test (Enlaces y Fuentes):**
+      * Proporciona los nombres y URLs/sitios web oficiales (ej. TEA Ediciones, Pearson Clinical, Manual Moderno).
+      * Sugiere términos exactos de búsqueda o repositorios académicos abiertos (SciELO, Redalyc, Dialnet) para encontrar los baremos, manuales o cuestionarios en PDF de dominio público.
+    """
+    
+    return llamar_groq_api(prompt, api_key)
