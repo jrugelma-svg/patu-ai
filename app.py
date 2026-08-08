@@ -222,7 +222,7 @@ if not api_key:
 
 
 # ---------------------------------------------------------
-# VISTA 1: EDITOR DE INFORMES PREMIUM
+# VISTA 1: EDITOR DE INFORMES PREMIUM & HERRAMIENTAS AVANZADAS
 # ---------------------------------------------------------
 if st.session_state.modo_premium:
     
@@ -235,86 +235,154 @@ if st.session_state.modo_premium:
     st.markdown('''
     <div style="text-align: center; margin-top: 10px; margin-bottom: 25px;">
         <span class="premium-badge">⭐ MÓDULO PREMIUM</span>
-        <h2 style="margin: 5px 0;">Generador de Informes Psicológicos Integrados</h2>
-        <p style="color: #64748B !important;">Ingresa datos o notas en borrador. La IA pulirá la redacción con el enfoque técnico deseado.</p>
+        <h2 style="margin: 5px 0;">Herramientas Diagnósticas e Informes Integrados</h2>
+        <p style="color: #64748B !important;">Genera reportes técnicos, procesa transcripciones extensas y consulta baterías psicométricas.</p>
     </div>
     ''', unsafe_allow_html=True)
 
-    col_form, col_resultado = st.columns([0.45, 0.55], gap="large")
+    # Navegación interna por Pestañas
+    tab_informe, tab_transcripcion, tab_pruebas = st.tabs([
+        "📄 Generador de Informes (.docx)", 
+        "🎙️ Analizador de Transcripciones (120 min)", 
+        "🧪 Buscador de Pruebas"
+    ])
 
-    with col_form:
-        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-        st.markdown("### 📝 Datos del Caso / Evaluación")
-        
-        enfoque = st.selectbox(
-            "🎯 Selecciona el Enfoque del Informe:",
-            ["Clínico", "Educativo", "Organizacional"]
-        )
+    # -----------------------------------------------------
+    # PESTAÑA 1: GENERADOR DE INFORMES (CON EXPORTADOR WORD)
+    # -----------------------------------------------------
+    with tab_informe:
+        col_form, col_resultado = st.columns([0.45, 0.55], gap="large")
 
-        st.markdown("---")
-        st.markdown("##### 👤 Datos de Filiación")
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            nombre = st.text_input("Nombre / Iniciales:", placeholder="Ej. J.P.")
-            edad = st.text_input("Edad:", placeholder="Ej. 28 años")
-        with col_f2:
-            genero = st.text_input("Sexo / Género:", placeholder="Ej. Femenino")
-            ocupacion = st.text_input("Ocupación / Escolaridad:", placeholder="Ej. Estudiante universitario")
-
-        st.markdown("---")
-        st.markdown("##### 📋 Contenido Clínico (Acepta notas o palabras sueltas)")
-        
-        motivo = st.text_area("1. Motivo de Consulta:", placeholder="Ej: Ansiedad, problemas para dormir, angustia...", height=70)
-        problema_actual = st.text_area("2. Problema Actual / Antecedentes:", placeholder="Ej: Hace 3 meses rompieron relación, estrés laboral, falta de concentración...", height=80)
-        pruebas_aplicadas = st.text_area("3. Pruebas / Instrumentos Aplicados:", placeholder="Ej: BDI-II, HAM-A, Millon...", height=70)
-        observaciones = st.text_area("4. Observaciones Conductuales:", placeholder="Ej: Contacto visual escaso, postura tensa, lenguaje coherente...", height=70)
-        diagnostico = st.text_area("5. Impresión Diagnóstica / Conclusiones:", placeholder="Ej: Sospecha de episodio depresivo leve...", height=70)
-
-        btn_generar_informe = st.button("🚀 Redactar e Integrar Informe con IA", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        st.markdown('<div class="split-card">', unsafe_allow_html=True)
-        st.markdown("### 🔗 Buscador de Fuentes y Enlaces de Pruebas")
-        prueba_query = st.text_input("Buscar prueba psicométrica:", placeholder="Ej. STAI, WAIS-IV, Beck Depression...")
-        btn_buscar_prueba = st.button("🔎 Buscar Recursos y Ficha Técnica", type="secondary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_resultado:
-        st.subheader("📄 Vista Previa del Documento")
-
-        # Procesar generación de nuevo informe
-        if btn_generar_informe:
-            datos_dict = {
-                "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
-                "motivo": motivo, "problema_actual": problema_actual,
-                "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
-                "diagnostico": diagnostico
-            }
-            with st.spinner(f"Sintetizando e integrando el informe con enfoque {enfoque}..."):
-                informe_final = engine.generar_informe_premium(datos_dict, enfoque, api_key)
-                st.session_state.ultimo_informe = informe_final
-                st.session_state.ultimo_nombre_paciente = nombre if nombre.strip() else "Paciente"
-
-        # Mostrar informe generado si existe en sesión
-        if st.session_state.ultimo_informe:
-            st.markdown('<div class="split-card">', unsafe_allow_html=True)
-            st.markdown(st.session_state.ultimo_informe)
-            st.markdown('</div>', unsafe_allow_html=True)
-
-            # Generar buffer de Word para la descarga
-            docx_buffer = generar_word_desde_markdown(st.session_state.ultimo_informe)
-            nombre_archivo = f"Informe_Psicologico_{st.session_state.ultimo_nombre_paciente}.docx"
-
-            st.download_button(
-                label="📥 Descargar Informe en Word (.docx)",
-                data=docx_buffer,
-                file_name=nombre_archivo,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                type="primary",
-                use_container_width=True
+        with col_form:
+            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+            st.markdown("### 📝 Datos del Caso / Evaluación")
+            
+            enfoque = st.selectbox(
+                "🎯 Selecciona el Enfoque del Informe:",
+                ["Clínico", "Educativo", "Organizacional"]
             )
 
-        elif btn_buscar_prueba:
+            st.markdown("---")
+            st.markdown("##### 👤 Datos de Filiación")
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                nombre = st.text_input("Nombre / Iniciales:", placeholder="Ej. J.P.")
+                edad = st.text_input("Edad:", placeholder="Ej. 28 años")
+            with col_f2:
+                genero = st.text_input("Sexo / Género:", placeholder="Ej. Femenino")
+                ocupacion = st.text_input("Ocupación / Escolaridad:", placeholder="Ej. Estudiante universitario")
+
+            st.markdown("---")
+            st.markdown("##### 📋 Contenido Clínico (Acepta notas o palabras sueltas)")
+            
+            motivo = st.text_area("1. Motivo de Consulta:", placeholder="Ej: Ansiedad, problemas para dormir...", height=70)
+            problema_actual = st.text_area("2. Problema Actual / Antecedentes:", placeholder="Ej: Rompimiento reciente...", height=80)
+            pruebas_aplicadas = st.text_area("3. Pruebas / Instrumentos Aplicados:", placeholder="Ej: BDI-II, HAM-A...", height=70)
+            observaciones = st.text_area("4. Observaciones Conductuales:", placeholder="Ej: Contacto visual escaso...", height=70)
+            diagnostico = st.text_area("5. Impresión Diagnóstica / Conclusiones:", placeholder="Ej: Sospecha de episodio depresivo...", height=70)
+
+            btn_generar_informe = st.button("🚀 Redactar e Integrar Informe con IA", type="primary", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col_resultado:
+            st.subheader("📄 Vista Previa del Documento")
+
+            if btn_generar_informe:
+                datos_dict = {
+                    "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
+                    "motivo": motivo, "problema_actual": problema_actual,
+                    "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
+                    "diagnostico": diagnostico
+                }
+                with st.spinner(f"Sintetizando e integrando el informe con enfoque {enfoque}..."):
+                    informe_final = engine.generar_informe_premium(datos_dict, enfoque, api_key)
+                    st.session_state.ultimo_informe = informe_final
+                    st.session_state.ultimo_nombre_paciente = nombre if nombre.strip() else "Paciente"
+
+            if st.session_state.ultimo_informe:
+                st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                st.markdown(st.session_state.ultimo_informe)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+                docx_buffer = generar_word_desde_markdown(st.session_state.ultimo_informe)
+                nombre_archivo = f"Informe_Psicologico_{st.session_state.ultimo_nombre_paciente}.docx"
+
+                st.download_button(
+                    label="📥 Descargar Informe en Word (.docx)",
+                    data=docx_buffer,
+                    file_name=nombre_archivo,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    type="primary",
+                    use_container_width=True
+                )
+            else:
+                st.markdown('''
+                <div class="split-card" style="text-align: center; padding: 50px 20px;">
+                    <p style="font-size: 3rem; margin-bottom: 10px;">📄</p>
+                    <h3>Espacio de Trabajo Premium</h3>
+                    <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                        Completa los campos de la izquierda y presiona <b>Redactar e Integrar Informe con IA</b>.
+                    </p>
+                </div>
+                ''', unsafe_allow_html=True)
+
+    # -----------------------------------------------------
+    # PESTAÑA 2: ANALIZADOR DE TRANCRIPCIONES (NUEVO)
+    # -----------------------------------------------------
+    with tab_transcripcion:
+        col_t_left, col_t_right = st.columns([0.45, 0.55], gap="large")
+
+        with col_t_left:
+            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+            st.markdown("### 🎙️ Procesador de Sesión Extensa")
+            st.caption("Pega la transcripción directa del audio o las notas brutas registradas durante la consulta de hasta 120 minutos.")
+
+            transcripcion_input = st.text_area(
+                "Transcripción o Registro Verbal de la Sesión:",
+                placeholder="[Paciente 10:15]: Siento que ya no puedo con la presión del trabajo... \n[Terapeuta 10:16]: ¿Qué situaciones específicas han detonado esta sensación?...",
+                height=350
+            )
+
+            btn_analizar_transcripcion = st.button("🔍 Analizar Transcripción con IA", type="primary", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with col_t_right:
+            st.subheader("📊 Análisis Diagnóstico Cualitativo")
+
+            if btn_analizar_transcripcion:
+                if not transcripcion_input.strip():
+                    st.warning("⚠️ Ingresa el texto o transcripción de la sesión para analizar.")
+                else:
+                    with st.spinner("Procesando transcripción extensa, extrayendo estado afectivo y evaluando alertas de riesgo..."):
+                        resultado_transcripcion = engine.analizar_transcripcion_sesion(transcripcion_input, api_key)
+                        st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                        st.markdown(resultado_transcripcion)
+                        st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('''
+                <div class="split-card" style="text-align: center; padding: 50px 20px;">
+                    <p style="font-size: 3rem; margin-bottom: 10px;">🎙️</p>
+                    <h3>Analizador de Diálogo Terapéutico</h3>
+                    <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                        Pega la transcripción de una consulta de 45 a 120 minutos a la izquierda para extraer automáticamente <b>alertas de riesgo, afecto, palabras recurrentes y puntos clave</b>.
+                    </p>
+                </div>
+                ''', unsafe_allow_html=True)
+
+    # -----------------------------------------------------
+    # PESTAÑA 3: BUSCADOR DE PRUEBAS
+    # -----------------------------------------------------
+    with tab_pruebas:
+        st.markdown('<div class="split-card">', unsafe_allow_html=True)
+        st.markdown("### 🔗 Buscador de Fuentes y Enlaces de Pruebas")
+        col_b1, col_b2 = st.columns([0.7, 0.3])
+        with col_b1:
+            prueba_query = st.text_input("Buscar prueba psicométrica:", placeholder="Ej. STAI, WAIS-IV, Beck Depression...", label_visibility="collapsed")
+        with col_b2:
+            btn_buscar_prueba = st.button("🔎 Buscar Recursos", type="secondary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        if btn_buscar_prueba:
             if not prueba_query.strip():
                 st.warning("⚠️ Escribe el nombre o acrónimo de la prueba a buscar.")
             else:
@@ -323,16 +391,6 @@ if st.session_state.modo_premium:
                     st.markdown('<div class="split-card">', unsafe_allow_html=True)
                     st.markdown(resultado_busqueda)
                     st.markdown('</div>', unsafe_allow_html=True)
-        else:
-            st.markdown('''
-            <div class="split-card" style="text-align: center; padding: 50px 20px;">
-                <p style="font-size: 3rem; margin-bottom: 10px;">📄</p>
-                <h3>Espacio de Trabajo Premium</h3>
-                <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
-                    Completa los campos de la izquierda y haz clic en <b>Redactar e Integrar Informe con IA</b> para obtener un documento clínico formal estructurado.
-                </p>
-            </div>
-            ''', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------
