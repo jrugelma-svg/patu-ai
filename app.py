@@ -1,6 +1,8 @@
 import os
+import io
 import base64
 import streamlit as st
+from docx import Document
 import engine
 
 # 1. Configuración inicial de la página
@@ -11,9 +13,16 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Inicializar estado de navegación
+# Inicializar estados de navegación y sesión
 if "modo_premium" not in st.session_state:
     st.session_state.modo_premium = False
+
+if "ultimo_informe" not in st.session_state:
+    st.session_state.ultimo_informe = None
+
+if "ultimo_nombre_paciente" not in st.session_state:
+    st.session_state.ultimo_nombre_paciente = "Paciente"
+
 
 # 2. Función para codificar la imagen del logo a Base64
 def get_image_base64(path):
@@ -24,7 +33,40 @@ def get_image_base64(path):
 
 img_base64 = get_image_base64("logo.jpg")
 
-# 3. Estilos CSS Personalizados
+
+# 3. Función auxiliar para convertir el Markdown a un archivo .docx (Word)
+def generar_word_desde_markdown(texto_markdown):
+    doc = Document()
+    
+    # Título principal del documento Word
+    doc.add_heading('INFORME PSICOLÓGICO', level=1)
+    
+    lineas = texto_markdown.split('\n')
+    for linea in lineas:
+        linea_clean = linea.strip()
+        if not linea_clean:
+            continue
+            
+        if linea_clean.startswith('# '):
+            doc.add_heading(linea_clean.replace('# ', ''), level=1)
+        elif linea_clean.startswith('## '):
+            doc.add_heading(linea_clean.replace('## ', ''), level=2)
+        elif linea_clean.startswith('### '):
+            doc.add_heading(linea_clean.replace('### ', ''), level=3)
+        elif linea_clean.startswith('* ') or linea_clean.startswith('- '):
+            texto = linea_clean[2:].replace('**', '')
+            doc.add_paragraph(texto, style='List Bullet')
+        else:
+            texto = linea_clean.replace('**', '')
+            doc.add_paragraph(texto)
+            
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+# 4. Estilos CSS Personalizados
 custom_css = """
 <style>
     /* Ocultar elementos predeterminados de Streamlit */
@@ -165,7 +207,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 4. Verificación de la API Key de Groq
+# 5. Verificación de la API Key de Groq
 api_key = os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 if not api_key:
@@ -240,6 +282,7 @@ if st.session_state.modo_premium:
     with col_resultado:
         st.subheader("📄 Vista Previa del Documento")
 
+        # Procesar generación de nuevo informe
         if btn_generar_informe:
             datos_dict = {
                 "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
@@ -249,9 +292,27 @@ if st.session_state.modo_premium:
             }
             with st.spinner(f"Sintetizando e integrando el informe con enfoque {enfoque}..."):
                 informe_final = engine.generar_informe_premium(datos_dict, enfoque, api_key)
-                st.markdown('<div class="split-card">', unsafe_allow_html=True)
-                st.markdown(informe_final)
-                st.markdown('</div>', unsafe_allow_html=True)
+                st.session_state.ultimo_informe = informe_final
+                st.session_state.ultimo_nombre_paciente = nombre if nombre.strip() else "Paciente"
+
+        # Mostrar informe generado si existe en sesión
+        if st.session_state.ultimo_informe:
+            st.markdown('<div class="split-card">', unsafe_allow_html=True)
+            st.markdown(st.session_state.ultimo_informe)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            # Generar buffer de Word para la descarga
+            docx_buffer = generar_word_desde_markdown(st.session_state.ultimo_informe)
+            nombre_archivo = f"Informe_Psicologico_{st.session_state.ultimo_nombre_paciente}.docx"
+
+            st.download_button(
+                label="📥 Descargar Informe en Word (.docx)",
+                data=docx_buffer,
+                file_name=nombre_archivo,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                type="primary",
+                use_container_width=True
+            )
 
         elif btn_buscar_prueba:
             if not prueba_query.strip():
