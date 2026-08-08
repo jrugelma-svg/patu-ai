@@ -20,7 +20,7 @@ def get_image_base64(path):
 
 img_base64 = get_image_base64("logo.jpg")
 
-# 3. Estilos CSS Personalizados: Split View con Fondo Warm/Amarillento
+# 3. Estilos CSS Personalizados con integración de fondo exacto y bordes rosados
 custom_css = """
 <style>
     /* Ocultar elementos predeterminados de Streamlit */
@@ -29,9 +29,9 @@ custom_css = """
     header {visibility: hidden;}
     .stAppHeader {display: none;}
 
-    /* Fondo principal amarillento / crema cálido */
+    /* Fondo exacto coincidente con la imagen del logo */
     .stApp, [data-testid="stAppViewContainer"] {
-        background-color: #FAF6ED !important;
+        background-color: #F8F8F8 !important;
         color: #2D3748 !important;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
@@ -41,38 +41,36 @@ custom_css = """
         color: #2D3748 !important;
     }
 
-    /* Tarjetas principales estilo Marfil */
+    /* Tarjetas principales limpias */
     .split-card {
-        background: #FFFDF8;
-        border: 1px solid #EFE8D8;
+        background: #FFFFFF;
+        border: 1px solid #EAEAEA;
         border-radius: 16px;
         padding: 22px;
         margin-bottom: 18px;
-        box-shadow: 0 4px 15px rgba(180, 160, 120, 0.08);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     }
 
-    /* Contenedor del Logo */
+    /* Contenedor del Logo sin tarjeta ni bordes */
     .logo-container {
-        background: #FFFFFF;
-        border: 1px solid #EFE8D8;
-        border-radius: 14px;
-        padding: 12px;
+        background: transparent !important;
         text-align: center;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        margin-bottom: 12px;
+        padding: 0;
     }
 
     .logo-img {
-        max-height: 70px;
+        max-height: 95px;
         width: auto;
         object-fit: contain;
+        mix-blend-mode: multiply;
     }
 
     .status-badge {
         background-color: #FEF3C7;
         color: #D97706 !important;
         border: 1px solid #FDE68A;
-        padding: 6px 12px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
@@ -92,46 +90,54 @@ custom_css = """
     .stTextArea textarea {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
-        border: 1px solid #E2D9C8 !important;
+        border: 1px solid #DCDCDC !important;
         border-radius: 12px !important;
         font-size: 0.95rem !important;
     }
 
     .stTextArea textarea:focus {
-        border-color: #D97706 !important;
-        box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.15) !important;
+        border-color: #E11D48 !important;
+        box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
     }
 
-    /* Estilo de los Botones */
+    /* =========================================================
+       ESTILO GENERAL DE BOTONES CON BORDES ROSADOS
+       ========================================================= */
     .stButton > button {
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         font-weight: 600 !important;
-        transition: all 0.2s ease-in-out !important;
-        border: none !important;
+        transition: all 0.25s ease-in-out !important;
     }
 
-    /* Botón Primario: Tono Rosa/Cálido inspirado en la 'A' de PATU */
+    /* Botón Primario (Analizar) */
     .stButton > button[kind="primary"] {
         background: #E11D48 !important;
         color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25) !important;
+        border: 2px solid #BE123C !important;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.2) !important;
     }
 
     .stButton > button[kind="primary"]:hover {
         background: #BE123C !important;
-        box-shadow: 0 6px 16px rgba(225, 29, 72, 0.35) !important;
+        border-color: #9F1239 !important;
+        box-shadow: 0 6px 18px rgba(225, 29, 72, 0.3) !important;
+        transform: translateY(-1px);
     }
 
-    /* Botones Secundarios */
+    /* Botones Secundarios (Pruebas y Diagnóstico) */
     .stButton > button[kind="secondary"] {
-        background: #F3EFE6 !important;
-        color: #44403C !important;
-        border: 1px solid #E7E0D3 !important;
+        background: #FFFFFF !important;
+        color: #9F1239 !important;
+        border: 2px solid #FDA4AF !important;
+        box-shadow: 0 2px 8px rgba(225, 29, 72, 0.05) !important;
     }
 
     .stButton > button[kind="secondary"]:hover {
-        background: #EAE3D5 !important;
-        color: #1C1917 !important;
+        background: #FFF1F2 !important;
+        color: #881337 !important;
+        border-color: #F43F5E !important;
+        box-shadow: 0 4px 12px rgba(225, 29, 72, 0.15) !important;
+        transform: translateY(-1px);
     }
 </style>
 """
@@ -159,7 +165,7 @@ col_izquierda, col_derecha = st.columns([0.38, 0.62], gap="large")
 # COLUMNA IZQUIERDA: Panel de Entrada y Acciones
 # =========================================================
 with col_izquierda:
-    # Encabezado / Logo
+    # Encabezado / Logo totalmente integrado sin contenedor
     logo_html = f'<img src="data:image/jpeg;base64,{img_base64}" class="logo-img">' if img_base64 else '<b>PATU AI</b>'
     
     st.markdown(f'''
@@ -177,7 +183,7 @@ with col_izquierda:
     </div>
     ''', unsafe_allow_html=True)
 
-    # Bloque 1: Formulario de Entrada
+    # Bloque Formulario de Entrada
     st.markdown('<div class="split-card">', unsafe_allow_html=True)
     st.subheader("📝 Motivo de Consulta")
     st.caption("Escribe la narrativa clínica del paciente:")
@@ -192,15 +198,13 @@ with col_izquierda:
     btn_analizar = st.button("🚀 Analizar Caso Clínico", type="primary", use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Bloque 2: Herramientas Complementarias
-    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+    # Herramientas Complementarias directas
     st.markdown("#### 🛠️ Módulos a Demanda")
-    st.caption("Haz clic para generar evaluaciones específicas en el panel derecho:")
+    st.caption("Genera evaluaciones específicas en el panel derecho:")
     
     btn_pruebas = st.button("🧪 Sugerir Pruebas Psicométricas", type="secondary", use_container_width=True)
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     btn_multiaxial = st.button("📋 Formular Diagnóstico Multiaxial", type="secondary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # =========================================================
@@ -247,7 +251,7 @@ with col_derecha:
                 st.markdown('</div>', unsafe_allow_html=True)
 
     else:
-        # Estado inicial (pantalla de bienvenida antes de analizar)
+        # Estado inicial
         st.markdown('''
         <div class="split-card" style="text-align: center; padding: 40px 20px;">
             <p style="font-size: 2.5rem; margin-bottom: 10px;">🩺</p>
