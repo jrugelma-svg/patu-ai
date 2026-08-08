@@ -11,6 +11,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Inicializar estado de navegación
+if "modo_premium" not in st.session_state:
+    st.session_state.modo_premium = False
+
 # 2. Función para codificar la imagen del logo a Base64
 def get_image_base64(path):
     if os.path.exists(path):
@@ -20,7 +24,7 @@ def get_image_base64(path):
 
 img_base64 = get_image_base64("logo.jpg")
 
-# 3. Estilos CSS Personalizados con bordes rosados y tarjeta Premium
+# 3. Estilos CSS Personalizados
 custom_css = """
 <style>
     /* Ocultar elementos predeterminados de Streamlit */
@@ -29,19 +33,18 @@ custom_css = """
     header {visibility: hidden;}
     .stAppHeader {display: none;}
 
-    /* Fondo exacto coincidente con la imagen del logo */
+    /* Fondo general */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #F8F8F8 !important;
         color: #2D3748 !important;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
 
-    /* Tipografías oscuras para lectura clara */
     p, span, label, h1, h2, h3, h4, h5, h6 {
         color: #2D3748 !important;
     }
 
-    /* Tarjetas principales limpias */
+    /* Tarjetas principales */
     .split-card {
         background: #FFFFFF;
         border: 1px solid #EAEAEA;
@@ -59,7 +62,6 @@ custom_css = """
         padding: 20px;
         margin-bottom: 18px;
         box-shadow: 0 4px 15px rgba(225, 29, 72, 0.06);
-        position: relative;
     }
 
     /* Contenedor del Logo */
@@ -97,13 +99,12 @@ custom_css = """
         border-radius: 50%;
     }
 
-    /* Insignia Premium */
     .premium-badge {
         background: linear-gradient(90deg, #E11D48, #FB7185);
         color: #FFFFFF !important;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         font-weight: 700;
-        padding: 3px 10px;
+        padding: 4px 12px;
         border-radius: 12px;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -111,8 +112,8 @@ custom_css = """
         margin-bottom: 8px;
     }
 
-    /* Campo de Texto (Textarea) */
-    .stTextArea textarea {
+    /* Textarea e Inputs */
+    .stTextArea textarea, .stTextInput input {
         background-color: #FFFFFF !important;
         color: #2D3748 !important;
         border: 1px solid #DCDCDC !important;
@@ -120,19 +121,18 @@ custom_css = """
         font-size: 0.95rem !important;
     }
 
-    .stTextArea textarea:focus {
+    .stTextArea textarea:focus, .stTextInput input:focus {
         border-color: #E11D48 !important;
         box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.15) !important;
     }
 
-    /* ESTILO GENERAL DE BOTONES CON BORDES ROSADOS */
+    /* Botones */
     .stButton > button {
         border-radius: 12px !important;
         font-weight: 600 !important;
         transition: all 0.25s ease-in-out !important;
     }
 
-    /* Botón Primario (Analizar) */
     .stButton > button[kind="primary"] {
         background: #E11D48 !important;
         color: #FFFFFF !important;
@@ -147,7 +147,6 @@ custom_css = """
         transform: translateY(-1px);
     }
 
-    /* Botones Secundarios */
     .stButton > button[kind="secondary"] {
         background: #FFFFFF !important;
         color: #9F1239 !important;
@@ -166,135 +165,223 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 4. Verificación de la API Key
-api_key = os.getenv("GEMINI_API_KEY")
+# 4. Verificación de la API Key de Groq
+api_key = os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 if not api_key:
     try:
-        api_key = st.secrets.get("GEMINI_API_KEY", "")
+        api_key = st.secrets.get("GROQ_API_KEY") or st.secrets.get("GEMINI_API_KEY", "")
     except Exception:
         api_key = ""
 
 if not api_key:
-    st.error("⚠️ Clave de API no detectada. Configura `GEMINI_API_KEY` en Streamlit Cloud.")
+    st.error("⚠️ Clave de API no detectada. Configura la API Key en las variables de entorno o Secrets.")
     st.stop()
 
-# ---------------------------------------------------------
-# 5. Estructura Split View (2 Columnas)
-# ---------------------------------------------------------
-col_izquierda, col_derecha = st.columns([0.38, 0.62], gap="large")
 
-# =========================================================
-# COLUMNA IZQUIERDA: Panel de Entrada y Acciones
-# =========================================================
-with col_izquierda:
-    # Encabezado / Logo
-    logo_html = f'<img src="data:image/jpeg;base64,{img_base64}" class="logo-img">' if img_base64 else '<b>PATU AI</b>'
+# ---------------------------------------------------------
+# VISTA 1: EDITOR DE INFORMES PREMIUM
+# ---------------------------------------------------------
+if st.session_state.modo_premium:
     
-    st.markdown(f'''
-    <div class="logo-container">
-        {logo_html}
-    </div>
-    ''', unsafe_allow_html=True)
+    col_nav, _ = st.columns([0.3, 0.7])
+    with col_nav:
+        if st.button("⬅️ Volver a Workstation Rápido", type="secondary"):
+            st.session_state.modo_premium = False
+            st.rerun()
 
     st.markdown('''
-    <div style="text-align: center; margin-bottom: 20px;">
-        <div class="status-badge">
-            <div class="status-dot"></div>
-            DSM-5-TR Motor Activo
-        </div>
+    <div style="text-align: center; margin-top: 10px; margin-bottom: 25px;">
+        <span class="premium-badge">⭐ MÓDULO PREMIUM</span>
+        <h2 style="margin: 5px 0;">Generador de Informes Psicológicos Integrados</h2>
+        <p style="color: #64748B !important;">Ingresa datos o notas en borrador. La IA pulirá la redacción con el enfoque técnico deseado.</p>
     </div>
     ''', unsafe_allow_html=True)
 
-    # Bloque 1: Formulario de Entrada
-    st.markdown('<div class="split-card">', unsafe_allow_html=True)
-    st.subheader("📝 Motivo de Consulta")
-    st.caption("Escribe la narrativa clínica del paciente:")
+    col_form, col_resultado = st.columns([0.45, 0.55], gap="large")
 
-    texto_caso = st.text_area(
-        label="Caso Clínico",
-        placeholder="Ejemplo: Paciente refiere que desde hace 6 meses experimenta episodios de ansiedad, angustia y palpitaciones...",
-        height=180,
-        label_visibility="collapsed"
-    )
+    with col_form:
+        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+        st.markdown("### 📝 Datos del Caso / Evaluación")
+        
+        enfoque = st.selectbox(
+            "🎯 Selecciona el Enfoque del Informe:",
+            ["Clínico", "Educativo", "Organizacional"]
+        )
 
-    btn_analizar = st.button("🚀 Analizar Caso Clínico", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("##### 👤 Datos de Filiación")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            nombre = st.text_input("Nombre / Iniciales:", placeholder="Ej. J.P.")
+            edad = st.text_input("Edad:", placeholder="Ej. 28 años")
+        with col_f2:
+            genero = st.text_input("Sexo / Género:", placeholder="Ej. Femenino")
+            ocupacion = st.text_input("Ocupación / Escolaridad:", placeholder="Ej. Estudiante universitario")
 
-    # Bloque 2: Módulos a Demanda (Tercer Cuadro con versión PREMIUM)
-    st.markdown('''
-    <div class="premium-card">
-        <span class="premium-badge">⭐ Módulos Premium</span>
-        <h4 style="margin: 4px 0 2px 0;">🛠️ Evaluaciones Avanzadas</h4>
-        <p style="font-size: 0.85rem; color: #64748B !important; margin-bottom: 12px;">Genera reportes técnicos especializados a demanda:</p>
-    </div>
-    ''', unsafe_allow_html=True)
-    
-    btn_pruebas = st.button("🧪 Sugerir Pruebas Psicométricas", type="secondary", use_container_width=True)
-    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-    btn_multiaxial = st.button("📋 Formular Diagnóstico Multiaxial", type="secondary", use_container_width=True)
+        st.markdown("---")
+        st.markdown("##### 📋 Contenido Clínico (Acepta notas o palabras sueltas)")
+        
+        motivo = st.text_area("1. Motivo de Consulta:", placeholder="Ej: Ansiedad, problemas para dormir, angustia...", height=70)
+        problema_actual = st.text_area("2. Problema Actual / Antecedentes:", placeholder="Ej: Hace 3 meses rompieron relación, estrés laboral, falta de concentración...", height=80)
+        pruebas_aplicadas = st.text_area("3. Pruebas / Instrumentos Aplicados:", placeholder="Ej: BDI-II, HAM-A, Millon...", height=70)
+        observaciones = st.text_area("4. Observaciones Conductuales:", placeholder="Ej: Contacto visual escaso, postura tensa, lenguaje coherente...", height=70)
+        diagnostico = st.text_area("5. Impresión Diagnóstica / Conclusiones:", placeholder="Ej: Sospecha de episodio depresivo leve...", height=70)
 
+        btn_generar_informe = st.button("🚀 Redactar e Integrar Informe con IA", type="primary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# =========================================================
-# COLUMNA DERECHA: Visualización de Resultados
-# =========================================================
-with col_derecha:
-    st.subheader("📊 Panel de Resultados Clínicos")
-    
-    # Manejo de acciones y renderizado
-    if btn_analizar:
-        if not texto_caso.strip():
-            st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
-        else:
-            with st.spinner("Ejecutando análisis sintomatológico DSM-5-TR..."):
-                resultado = engine.analizar_caso_inicial(texto_caso, api_key)
+        st.markdown('<div class="split-card">', unsafe_allow_html=True)
+        st.markdown("### 🔗 Buscador de Fuentes y Enlaces de Pruebas")
+        prueba_query = st.text_input("Buscar prueba psicométrica:", placeholder="Ej. STAI, WAIS-IV, Beck Depression...")
+        btn_buscar_prueba = st.button("🔎 Buscar Recursos y Ficha Técnica", type="secondary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col_resultado:
+        st.subheader("📄 Vista Previa del Documento")
+
+        if btn_generar_informe:
+            datos_dict = {
+                "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
+                "motivo": motivo, "problema_actual": problema_actual,
+                "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
+                "diagnostico": diagnostico
+            }
+            with st.spinner(f"Sintetizando e integrando el informe con enfoque {enfoque}..."):
+                informe_final = engine.generar_informe_premium(datos_dict, enfoque, api_key)
                 st.markdown('<div class="split-card">', unsafe_allow_html=True)
-                st.markdown("### 📌 Mapeo y Diagnóstico Inicial")
-                st.markdown("---")
-                st.markdown(resultado)
+                st.markdown(informe_final)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-    elif btn_pruebas:
-        if not texto_caso.strip():
-            st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
+        elif btn_buscar_prueba:
+            if not prueba_query.strip():
+                st.warning("⚠️ Escribe el nombre o acrónimo de la prueba a buscar.")
+            else:
+                with st.spinner(f"Buscando ficha técnica y referencias para {prueba_query}..."):
+                    resultado_busqueda = engine.buscar_recursos_pruebas(prueba_query, api_key)
+                    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                    st.markdown(resultado_busqueda)
+                    st.markdown('</div>', unsafe_allow_html=True)
         else:
-            with st.spinner("Compilando batería psicométrica recomendada..."):
-                resultado_pruebas = engine.obtener_pruebas_psicometricas(texto_caso, api_key)
-                st.markdown('<div class="split-card">', unsafe_allow_html=True)
-                st.markdown("### 🧪 Batería Psicométrica Recomendada")
-                st.markdown("---")
-                st.markdown(resultado_pruebas)
-                st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown('''
+            <div class="split-card" style="text-align: center; padding: 50px 20px;">
+                <p style="font-size: 3rem; margin-bottom: 10px;">📄</p>
+                <h3>Espacio de Trabajo Premium</h3>
+                <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                    Completa los campos de la izquierda y haz clic en <b>Redactar e Integrar Informe con IA</b> para obtener un documento clínico formal estructurado.
+                </p>
+            </div>
+            ''', unsafe_allow_html=True)
 
-    elif btn_multiaxial:
-        if not texto_caso.strip():
-            st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
-        else:
-            with st.spinner("Generando formulación multiaxial..."):
-                resultado_multiaxial = engine.generar_diagnostico_multiaxial(texto_caso, "", api_key)
-                st.markdown('<div class="split-card">', unsafe_allow_html=True)
-                st.markdown("### 📋 Evaluación Multiaxial")
-                st.markdown("---")
-                st.markdown(resultado_multiaxial)
-                st.markdown('</div>', unsafe_allow_html=True)
 
-    else:
-        # Estado inicial
-        st.markdown('''
-        <div class="split-card" style="text-align: center; padding: 40px 20px;">
-            <p style="font-size: 2.5rem; margin-bottom: 10px;">🩺</p>
-            <h3 style="margin-bottom: 8px;">Listo para evaluar</h3>
-            <p style="color: #78716C !important; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">
-                Ingresa el motivo de consulta en el panel de la izquierda y presiona <b>Analizar Caso Clínico</b> para ver los resultados aquí.
-            </p>
+# ---------------------------------------------------------
+# VISTA 2: WORKSTATION PRINCIPAL (VISTA CLÁSICA)
+# ---------------------------------------------------------
+else:
+    col_izquierda, col_derecha = st.columns([0.38, 0.62], gap="large")
+
+    with col_izquierda:
+        logo_html = f'<img src="data:image/jpeg;base64,{img_base64}" class="logo-img">' if img_base64 else '<b>PATU AI</b>'
+        
+        st.markdown(f'''
+        <div class="logo-container">
+            {logo_html}
         </div>
         ''', unsafe_allow_html=True)
 
+        st.markdown('''
+        <div style="text-align: center; margin-bottom: 20px;">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                DSM-5-TR Motor Activo
+            </div>
+        </div>
+        ''', unsafe_allow_html=True)
+
+        # Bloque 1: Formulario Rápido
+        st.markdown('<div class="split-card">', unsafe_allow_html=True)
+        st.subheader("📝 Motivo de Consulta")
+        st.caption("Escribe la narrativa clínica del paciente:")
+
+        texto_caso = st.text_area(
+            label="Caso Clínico",
+            placeholder="Ejemplo: Paciente refiere que desde hace 6 meses experimenta episodios de ansiedad, angustia y palpitaciones...",
+            height=180,
+            label_visibility="collapsed"
+        )
+
+        btn_analizar = st.button("🚀 Analizar Caso Clínico", type="primary", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Bloque 2: Acceso a Módulos Premium
+        st.markdown('''
+        <div class="premium-card">
+            <span class="premium-badge">⭐ Módulos Premium</span>
+            <h4 style="margin: 4px 0 2px 0;">🛠️ Evaluaciones e Informes</h4>
+            <p style="font-size: 0.85rem; color: #64748B !important; margin-bottom: 12px;">Genera reportes técnicos y consulta baterías psicométricas:</p>
+        </div>
+        ''', unsafe_allow_html=True)
+        
+        btn_ir_premium = st.button("⭐ Abrir Generador de Informes Premium", type="primary", use_container_width=True)
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        btn_pruebas = st.button("🧪 Sugerir Pruebas Psicométricas", type="secondary", use_container_width=True)
+        st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+        btn_multiaxial = st.button("📋 Formular Diagnóstico Multiaxial", type="secondary", use_container_width=True)
+
+        if btn_ir_premium:
+            st.session_state.modo_premium = True
+            st.rerun()
+
+    with col_derecha:
+        st.subheader("📊 Panel de Resultados Clínicos")
+        
+        if btn_analizar:
+            if not texto_caso.strip():
+                st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
+            else:
+                with st.spinner("Ejecutando análisis sintomatológico DSM-5-TR..."):
+                    resultado = engine.analizar_caso_inicial(texto_caso, api_key)
+                    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                    st.markdown("### 📌 Mapeo y Diagnóstico Inicial")
+                    st.markdown("---")
+                    st.markdown(resultado)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+        elif btn_pruebas:
+            if not texto_caso.strip():
+                st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
+            else:
+                with st.spinner("Compilando batería psicométrica recomendada..."):
+                    resultado_pruebas = engine.obtener_pruebas_psicometricas(texto_caso, api_key)
+                    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                    st.markdown(resultado_pruebas)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+        elif btn_multiaxial:
+            if not texto_caso.strip():
+                st.warning("⚠️ Ingresa primero la narrativa del caso en el panel izquierdo.")
+            else:
+                with st.spinner("Generando formulación multiaxial..."):
+                    resultado_multiaxial = engine.generar_diagnostico_multiaxial(texto_caso, "", api_key)
+                    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                    st.markdown(resultado_multiaxial)
+                    st.markdown('</div>', unsafe_allow_html=True)
+
+        else:
+            st.markdown('''
+            <div class="split-card" style="text-align: center; padding: 40px 20px;">
+                <p style="font-size: 2.5rem; margin-bottom: 10px;">🩺</p>
+                <h3 style="margin-bottom: 8px;">Listo para evaluar</h3>
+                <p style="color: #78716C !important; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">
+                    Ingresa el motivo de consulta en el panel de la izquierda y presiona <b>Analizar Caso Clínico</b> o accede al <b>Generador Premium</b>.
+                </p>
+            </div>
+            ''', unsafe_allow_html=True)
+
 # ---------------------------------------------------------
-# 6. Pie de página (Footer)
+# Pie de página (Footer)
 # ---------------------------------------------------------
 st.markdown("---")
-
 footer_code = """
 <div style="text-align: center; color: #78716C; padding: 15px; font-size: 0.85rem;">
     <p style="margin-bottom: 5px;">© 2026 <b>PATU AI</b>. Todos los derechos reservados.</p>
