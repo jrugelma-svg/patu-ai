@@ -1,5 +1,6 @@
 import streamlit as st
 import io
+import os
 import docx
 from docx import Document
 import engine  # Módulo personalizado para consultar la API de Groq
@@ -128,7 +129,7 @@ def generar_word_desde_markdown(texto_markdown):
 
 
 # ---------------------------------------------------------
-# BARRA LATERAL (SIDEBAR) - CARGA AUTOMÁTICA DE SECRETS
+# BARRA LATERAL (SIDEBAR) - DETECCIÓN MULTI-ORIGEN DE API KEY
 # ---------------------------------------------------------
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/387/387561.png", width=65)
@@ -137,29 +138,38 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # 1. Intentar obtener la API Key desde los secrets de Streamlit
+    # Búsqueda exhaustiva de la clave en st.secrets y os.environ
     api_key_secret = ""
-    try:
-        if "GROQ_API_KEY" in st.secrets:
-            api_key_secret = st.secrets["GROQ_API_KEY"]
-    except Exception:
-        pass
+    
+    # 1. Buscar en Streamlit Secrets bajo varios nombres comunes
+    for secret_name in ["GROQ_API_KEY", "groq_api_key", "API_KEY", "api_key", "GROQ_KEY"]:
+        try:
+            if secret_name in st.secrets:
+                api_key_secret = str(st.secrets[secret_name]).strip()
+                if api_key_secret:
+                    break
+        except Exception:
+            pass
 
-    # 2. Input en la barra lateral pre-llenado con la clave de Secrets
+    # 2. Si aún no está, buscar en Variables de Entorno del sistema
+    if not api_key_secret:
+        api_key_secret = os.environ.get("GROQ_API_KEY", "").strip()
+
+    # 3. Input en la barra lateral pre-llenado
     api_key_input = st.text_input(
         "🔑 API Key de Groq:", 
         value=api_key_secret, 
         type="password", 
-        help="Detectada automáticamente si la configuraste en los Secrets de Streamlit."
+        help="Si configuraste la API Key en los Secrets de Streamlit, se detectará automáticamente aquí."
     )
 
-    # 3. Asignar la clave activa
+    # Definir la clave final a usar
     api_key = api_key_input.strip() if api_key_input.strip() else api_key_secret
 
     if not api_key:
-        st.info("💡 Por favor, ingresa tu API Key para habilitar la generación de análisis e informes.")
+        st.warning("⚠️ No se detectó API Key. Ingrésala arriba o configúrala en los Secrets.")
     else:
-        st.caption("✅ API Key detectada y lista para usar.")
+        st.success("✅ API Key cargada correctamente")
 
     st.markdown("---")
 
@@ -169,7 +179,7 @@ with st.sidebar:
         st.rerun()
 
     if st.session_state.modo_premium:
-        st.success("Modo Activo: **Módulo Premium**")
+        st.info("Modo Activo: **Módulo Premium**")
     else:
         st.info("Modo Activo: **Workstation Rápido**")
 
@@ -474,7 +484,7 @@ else:
             datos_extra_input = st.text_area(
                 "Ingresa antecedentes médicos, estresores psicosociales o notas extra:",
                 value=st.session_state.datos_extra,
-                placeholder="Ejemplo: Problemas financieros recientes, antecedente familiar de depresión, examen médico general sin alteraciones sintomáticas...",
+                placeholder="Ejemplo: Problemas financieros recientes, antecedente familiar de depresión, examen médico general sin alterations sintomáticas...",
                 height=120
             )
             st.session_state.datos_extra = datos_extra_input
