@@ -189,7 +189,7 @@ def buscar_recursos_pruebas(nombre_prueba: str, api_key: str):
 
 
 # =========================================================
-# HERRAMIENTAS DIAGNÓSTICAS AVANZADAS (AUDIO & TRANCRIPCIÓN)
+# HERRAMIENTAS DIAGNÓSTICAS AVANZADAS (AUDIO, TRANCRIPCIÓN & PSICOEDUCACIÓN)
 # =========================================================
 
 def transcribir_audio_groq(archivo_audio, api_key: str):
@@ -262,5 +262,57 @@ def analizar_transcripcion_sesion(texto_transcripcion: str, api_key: str):
 
     🌱 **5. INTERVENCIONES Y SUGERENCIAS PARA LA PRÓXIMA SESIÓN**
     * Sugiere 2 o 3 hipótesis de trabajo o hilos conductuales para profundizar en el siguiente encuentro.
+    """
+    return llamar_groq_api(prompt, api_key)
+
+
+def generar_plantilla_psicoeducacion(diagnostico_o_caso: str, destinatario: str, api_key: str):
+    """
+    Traduce un diagnóstico o cuadro clínico complejo a un lenguaje empático,
+    accesible y estructurado para ser entregado al paciente o a su familia.
+    """
+    prompt = f"""
+    Actúas como un Psicólogo Clínico experto en Psicoeducación y Comunicación Empática.
+    Tu tarea es traducir la siguiente información clínica a una guía psicoeducativa dirigida a: **{destinatario.upper()}**.
+
+    INFORMACIÓN CLÍNICA / DIAGNÓSTICO BASE:
+    "{diagnostico_o_caso}"
+
+    REGLAS DE COMUNICACIÓN Y TONO:
+    1. Usa un lenguaje claro, cálido, empático y profesional, evitando tecnicismos médicos/psicológicos innecesarios (o explicándolos con analogías sencillas si se usan).
+    2. Mantén un enfoque de desestigmatización y validación emocional.
+    3. Asegura que la estructura sea comprensible, esperanzadora y orientada a la acción.
+
+    GENERA EL DOCUMENTO EN MARKDOWN CON LA SIGUIENTE ESTRUCTURA:
+
+    # 📘 Guía Informativa y Psicoeducativa
+
+    ---
+
+    ### 🌟 1. ¿Qué es lo que está pasando?
+    * Explica el cuadro o la situación clínica en palabras sencillas.
+    * Utiliza una analogía clara para facilitar la comprensión de cómo se manifiesta.
+
+    ---
+
+    ### 🧠 2. ¿Por qué ocurre esto?
+    * Explica de forma accesible los factores (emocionales, biológicos o ambientales) que influyen en este estado.
+    * Normaliza las reacciones emocionales o síntomas más comunes.
+
+    ---
+
+    ### 🛠️ 3. Herramientas y Estrategias Prácticas para el Día a Día
+    * Ofrece de 3 a 5 pautas concretas de autorregulación o manejo cotidiano aplicables para el paciente o la familia.
+
+    ---
+
+    ### 🤝 4. ¿Cómo pueden apoyar los seres queridos? (Red de Apoyo)
+    * Pautas sobre lo que **SÍ ayuda** (ej. escucha activa, validación).
+    * Pautas sobre lo que **NO ayuda** (ej. juzgar, presionar, minimizar el malestar).
+
+    ---
+
+    ### 💡 5. Mensaje de Cierre y Esperanza
+    * Un mensaje breve que refuerce la importancia del proceso terapéutico y el pronóstico positivo con el acompañamiento adecuado.
     """
     return llamar_groq_api(prompt, api_key)
