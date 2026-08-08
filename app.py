@@ -51,44 +51,36 @@ if "ultimo_psicoeducacion" not in st.session_state:
     st.session_state.ultimo_psicoeducacion = None
 
 # ---------------------------------------------------------
-# ESTILOS CSS PERSONALIZADOS
+# ESTILOS CSS PERSONALIZADOS (COMPATIBLES CON MODO OSCURO Y CLARO)
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-    /* Estilos generales */
-    .main {
-        background-color: #F8FAFC;
-    }
-    
-    /* Encabezados y títulos */
-    h1, h2, h3 {
-        color: #1E293B;
-        font-family: 'Inter', sans-serif;
-    }
-    
-    /* Contenedores tipo tarjeta */
-    .split-card {
-        background-color: #FFFFFF;
-        padding: 24px;
-        border-radius: 12px;
-        border: 1px solid #E2E8F0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-    }
-
-    .premium-card {
-        background-color: #FFFFFF;
+    /* Tarjetas adaptables al tema */
+    .split-card, .premium-card {
+        background-color: #FFFFFF !important;
+        color: #1E293B !important;
         padding: 24px;
         border-radius: 12px;
         border: 1px solid #CBD5E1;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         margin-bottom: 20px;
+    }
+
+    /* Asegurar contraste de texto dentro de tarjetas */
+    .split-card *, .premium-card * {
+        color: #1E293B !important;
+    }
+
+    .split-card h1, .split-card h2, .split-card h3,
+    .premium-card h1, .premium-card h2, .premium-card h3 {
+        color: #0F172A !important;
+        font-weight: 700;
     }
 
     /* Badges */
     .premium-badge {
-        background-color: #FEF3C7;
-        color: #92400E;
+        background-color: #FEF3C7 !important;
+        color: #92400E !important;
         padding: 4px 12px;
         border-radius: 9999px;
         font-size: 0.85rem;
@@ -97,10 +89,10 @@ st.markdown("""
         margin-bottom: 10px;
     }
 
-    /* Botones personalizados */
+    /* Botones */
     .stButton>button {
         border-radius: 8px;
-        font-weight: 500;
+        font-weight: 600;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -136,7 +128,7 @@ def generar_word_desde_markdown(texto_markdown):
 
 
 # ---------------------------------------------------------
-# BARRA LATERAL (SIDEBAR) - CONFIGURACIÓN Y CLAVE API
+# BARRA LATERAL (SIDEBAR) - CARGA AUTOMÁTICA DE SECRETS
 # ---------------------------------------------------------
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/387/387561.png", width=65)
@@ -145,15 +137,32 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Clave de API de Groq
-    api_key = st.text_input("🔑 Ingrese API Key de Groq:", type="password", help="Obtén tu clave gratuita en console.groq.com")
+    # 1. Intentar obtener la API Key desde los secrets de Streamlit
+    api_key_secret = ""
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            api_key_secret = st.secrets["GROQ_API_KEY"]
+    except Exception:
+        pass
+
+    # 2. Input en la barra lateral pre-llenado con la clave de Secrets
+    api_key_input = st.text_input(
+        "🔑 API Key de Groq:", 
+        value=api_key_secret, 
+        type="password", 
+        help="Detectada automáticamente si la configuraste en los Secrets de Streamlit."
+    )
+
+    # 3. Asignar la clave activa
+    api_key = api_key_input.strip() if api_key_input.strip() else api_key_secret
 
     if not api_key:
         st.info("💡 Por favor, ingresa tu API Key para habilitar la generación de análisis e informes.")
+    else:
+        st.caption("✅ API Key detectada y lista para usar.")
 
     st.markdown("---")
 
-    # Toggle de cambio de vista (Gratuito / Premium)
     st.subheader("⚙️ Módulo de Trabajo")
     if st.button("⭐ Conmutar Vista Premium / Rápida", use_container_width=True):
         st.session_state.modo_premium = not st.session_state.modo_premium
@@ -183,11 +192,10 @@ if st.session_state.modo_premium:
     <div style="text-align: center; margin-top: 10px; margin-bottom: 25px;">
         <span class="premium-badge">⭐ MÓDULO PREMIUM</span>
         <h2 style="margin: 5px 0;">Herramientas Diagnósticas e Informes Integrados</h2>
-        <p style="color: #64748B !important;">Genera reportes técnicos, procesa audios, elabora material psicoeducativo y consulta baterías psicométricas.</p>
+        <p>Genera reportes técnicos, procesa audios, elabora material psicoeducativo y consulta baterías psicométricas.</p>
     </div>
     ''', unsafe_allow_html=True)
 
-    # Navegación interna por Pestañas
     tab_informe, tab_transcripcion, tab_psicoed, tab_pruebas = st.tabs([
         "📄 Generador de Informes (.docx)", 
         "🎙️ Analizador de Audios y Transcripciones", 
@@ -195,14 +203,11 @@ if st.session_state.modo_premium:
         "🧪 Buscador de Pruebas"
     ])
 
-    # -----------------------------------------------------
-    # PESTAÑA 1: GENERADOR DE INFORMES (CON EXPORTADOR WORD)
-    # -----------------------------------------------------
+    # PESTAÑA 1: GENERADOR DE INFORMES
     with tab_informe:
         col_form, col_resultado = st.columns([0.45, 0.55], gap="large")
 
         with col_form:
-            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.markdown("### 📝 Datos del Caso / Evaluación")
             
             enfoque = st.selectbox(
@@ -221,7 +226,7 @@ if st.session_state.modo_premium:
                 ocupacion = st.text_input("Ocupación / Escolaridad:", placeholder="Ej. Estudiante universitario")
 
             st.markdown("---")
-            st.markdown("##### 📋 Contenido Clínico (Acepta notas o palabras sueltas)")
+            st.markdown("##### 📋 Contenido Clínico")
             
             motivo = st.text_area("1. Motivo de Consulta:", placeholder="Ej: Ansiedad, problemas para dormir...", height=70)
             problema_actual = st.text_area("2. Problema Actual / Antecedentes:", placeholder="Ej: Rompimiento reciente...", height=80)
@@ -230,7 +235,6 @@ if st.session_state.modo_premium:
             diagnostico = st.text_area("5. Impresión Diagnóstica / Conclusiones:", placeholder="Ej: Sospecha de episodio depresivo...", height=70)
 
             btn_generar_informe = st.button("🚀 Redactar e Integrar Informe con IA", type="primary", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
 
         with col_resultado:
             st.subheader("📄 Vista Previa del Documento")
@@ -271,20 +275,17 @@ if st.session_state.modo_premium:
                 <div class="split-card" style="text-align: center; padding: 50px 20px;">
                     <p style="font-size: 3rem; margin-bottom: 10px;">📄</p>
                     <h3>Espacio de Trabajo Premium</h3>
-                    <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                    <p style="color: #475569 !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
                         Completa los campos de la izquierda y presiona <b>Redactar e Integrar Informe con IA</b>.
                     </p>
                 </div>
                 ''', unsafe_allow_html=True)
 
-    # -----------------------------------------------------
-    # PESTAÑA 2: ANALIZADOR DE AUDIOS Y TRANCRIPCIONES
-    # -----------------------------------------------------
+    # PESTAÑA 2: ANALIZADOR DE AUDIOS
     with tab_transcripcion:
         col_t_left, col_t_right = st.columns([0.45, 0.55], gap="large")
 
         with col_t_left:
-            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.markdown("### 🎙️ Procesador de Sesión Extensa")
             st.caption("Sube la grabación de audio de la consulta o pega directamente las notas/transcripción.")
 
@@ -329,8 +330,6 @@ if st.session_state.modo_premium:
                 if btn_analizar_texto:
                     transcripcion_para_analizar = transcripcion_input
 
-            st.markdown('</div>', unsafe_allow_html=True)
-
         with col_t_right:
             st.subheader("📊 Análisis Diagnóstico Cualitativo")
 
@@ -353,20 +352,17 @@ if st.session_state.modo_premium:
                 <div class="split-card" style="text-align: center; padding: 50px 20px;">
                     <p style="font-size: 3rem; margin-bottom: 10px;">🎙️</p>
                     <h3>Analizador de Audio y Diálogo Terapéutico</h3>
-                    <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                    <p style="color: #475569 !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
                         Sube la <b>grabación de audio</b> o pega las <b>notas de la sesión</b> a la izquierda para extraer automáticamente <b>alertas de riesgo, afecto, palabras recurrentes y puntos clave</b>.
                     </p>
                 </div>
                 ''', unsafe_allow_html=True)
 
-    # -----------------------------------------------------
-    # PESTAÑA 3: PSICOEDUCACIÓN PACIENTE / FAMILIA
-    # -----------------------------------------------------
+    # PESTAÑA 3: PSICOEDUCACIÓN
     with tab_psicoed:
         col_p_left, col_p_right = st.columns([0.45, 0.55], gap="large")
 
         with col_p_left:
-            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.markdown("### 📘 Generador de Guía Psicoeducativa")
             st.caption("Convierte diagnósticos o notas clínicas técnicas en una guía clara, empática y fácil de comprender.")
 
@@ -382,7 +378,6 @@ if st.session_state.modo_premium:
             )
 
             btn_generar_psicoed = st.button("✨ Generar Guía Psicoeducativa", type="primary", use_container_width=True)
-            st.markdown('</div>', unsafe_allow_html=True)
 
         with col_p_right:
             st.subheader("📄 Guía Traducida y Empática")
@@ -416,24 +411,20 @@ if st.session_state.modo_premium:
                 <div class="split-card" style="text-align: center; padding: 50px 20px;">
                     <p style="font-size: 3rem; margin-bottom: 10px;">📘</p>
                     <h3>Material de Apoyo para Paciente y Familia</h3>
-                    <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
+                    <p style="color: #475569 !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
                         Ingresa el diagnóstico o cuadro a la izquierda para generar un documento descargable en Word con <b>lenguaje empático, explicaciones analógicas y pautas de apoyo cotidiano</b>.
                     </p>
                 </div>
                 ''', unsafe_allow_html=True)
 
-    # -----------------------------------------------------
     # PESTAÑA 4: BUSCADOR DE PRUEBAS
-    # -----------------------------------------------------
     with tab_pruebas:
-        st.markdown('<div class="split-card">', unsafe_allow_html=True)
         st.markdown("### 🔗 Buscador de Fuentes y Enlaces de Pruebas")
         col_b1, col_b2 = st.columns([0.7, 0.3])
         with col_b1:
             prueba_query = st.text_input("Buscar prueba psicométrica:", placeholder="Ej. STAI, WAIS-IV, Beck Depression...", label_visibility="collapsed")
         with col_b2:
             btn_buscar_prueba = st.button("🔎 Buscar Recursos", type="secondary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
         if btn_buscar_prueba:
             if not api_key:
@@ -453,19 +444,16 @@ if st.session_state.modo_premium:
 # =========================================================
 else:
     st.markdown('''
-    <div style="text-align: center; margin-top: 5px; margin-bottom: 20px;">
+    <div style="text-align: center; margin-top: 5px; margin-bottom: 25px;">
         <h2>Workstation Clínico Integrado</h2>
-        <p style="color: #64748B !important;">Análisis progresivo de casos: del lenguaje coloquial al diagnóstico multiaxial.</p>
+        <p style="color: #94A3B8 !important;">Análisis progresivo de casos: del lenguaje coloquial al diagnóstico multiaxial.</p>
     </div>
     ''', unsafe_allow_html=True)
 
     col_izq, col_der = st.columns([0.45, 0.55], gap="large")
 
-    # -----------------------------------------------------
     # COLUMNA IZQUIERDA: FORMULARIO DE ENTRADA
-    # -----------------------------------------------------
     with col_izq:
-        st.markdown('<div class="split-card">', unsafe_allow_html=True)
         st.markdown("### 📥 1. Narrativa o Motivo de Consulta")
         
         texto_caso_input = st.text_area(
@@ -477,11 +465,10 @@ else:
         st.session_state.caso_actual = texto_caso_input
 
         btn_paso1 = st.button("🔎 PASO 1: Analizar Semejanzas y Brechas", type="primary", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
 
-        # Bloque de datos adicionales (Solo si ya se ejecutó el Paso 1)
+        # Bloque de datos adicionales
         if st.session_state.resultado_semejanzas:
-            st.markdown('<div class="split-card">', unsafe_allow_html=True)
+            st.markdown("---")
             st.markdown("### 📋 2. Contexto Adicional para Multiaxial")
             
             datos_extra_input = st.text_area(
@@ -498,15 +485,10 @@ else:
             with col_btn3:
                 btn_paso3 = st.button("🎯 Generar Multiaxial", type="primary", use_container_width=True)
 
-            st.markdown('</div>', unsafe_allow_html=True)
-
-    # -----------------------------------------------------
     # COLUMNA DERECHA: RESULTADOS CLÍNICOS
-    # -----------------------------------------------------
     with col_der:
         st.markdown("### 📊 Panel de Análisis Clínico")
 
-        # Lógica de disparadores para Paso 1, 2 y 3
         if btn_paso1:
             if not api_key:
                 st.error("⚠️ Ingrese su API Key en la barra lateral para continuar.")
@@ -537,7 +519,7 @@ else:
                     )
                     st.session_state.resultado_multiaxial = res_m
 
-        # Renderizado de Resultados
+        # Renderizado de Resultados en Tarjetas
         if st.session_state.resultado_semejanzas:
             st.markdown('<div class="split-card">', unsafe_allow_html=True)
             st.markdown(st.session_state.resultado_semejanzas)
@@ -558,7 +540,7 @@ else:
             <div class="split-card" style="text-align: center; padding: 50px 20px;">
                 <p style="font-size: 3rem; margin-bottom: 10px;">📋</p>
                 <h3>Panel de Control Clínico Vacío</h3>
-                <p style="color: #78716C !important; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">
+                <p style="color: #475569 !important; font-size: 0.95rem; max-width: 400px; margin: 0 auto;">
                     Escribe la narrativa del paciente en el panel de la izquierda y presiona <b>PASO 1</b> para iniciar la evaluación diagnóstica.
                 </p>
             </div>
