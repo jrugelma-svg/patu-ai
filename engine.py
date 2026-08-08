@@ -1,7 +1,7 @@
 import requests
 import json
 
-# Usamos el modelo estrella de Groq (Llama 3.3 70B)
+# Modelo estrella de Groq (Llama 3.3 70B)
 MODEL_NAME = "llama-3.3-70b-versatile"
 
 def llamar_groq_api(prompt, api_key):
@@ -181,4 +181,55 @@ def buscar_recursos_pruebas(nombre_prueba: str, api_key: str):
       * Sugiere términos exactos de búsqueda o repositorios académicos abiertos (SciELO, Redalyc, Dialnet) para encontrar los baremos, manuales o cuestionarios en PDF de dominio público.
     """
     
+    return llamar_groq_api(prompt, api_key)
+
+
+# =========================================================
+# HERRAMIENTAS DIAGNÓSTICAS AVANZADAS
+# =========================================================
+
+def analizar_transcripcion_sesion(texto_transcripcion: str, api_key: str):
+    """
+    Procesa transcripciones extensas o notas de sesiones de larga duración (hasta 120 min)
+    y extrae puntos clave, palabras recurrentes, indicadores de riesgo y estado afectivo.
+    """
+    prompt = f"""
+    Actúas como un Supervisor Clínico y Analista Cualitativo del Discurso Terapéutico.
+    Analiza minuciosamente el siguiente registro, nota o transcripción extensa de una sesión terapéutica.
+
+    REGISTRO / TRANCRIPCIÓN DE LA SESIÓN:
+    "{texto_transcripcion}"
+
+    SINTETIZA Y GENERA UN ANÁLISIS ESTRUCTURADO EN MARKDOWN CON EL SIGUIENTE FORMATO:
+
+    ### 🎙️ Análisis de Transcripción / Notas de Sesión
+
+    ---
+
+    🚨 **1. EVALUACIÓN Y ALERTAS DE RIESGO**
+    * **Nivel de Riesgo Detectado:** [Bajo / Moderado / Alto / Crítico]
+    * **Indicadores de Riesgo:** (Identifica expresamente si existen menciones explícitas o implícitas de ideación autolítica, autolesión, agresividad hacia terceros, violencia o consumo desadaptativo de sustancias. Si no se observan, indícalo claramente).
+
+    ---
+
+    💭 **2. ESTADO AFECTIVO Y TONO EMOCIONAL**
+    * **Afecto / Ánimo Predominante:** (Descripción cualitativa: ej. plano, ebullicionante, lábil, disfórico, ansioso, congruente/incongruente).
+    * **Fluctuaciones Terapéuticas:** (Puntos o momentos de la sesión donde el estado emocional cambió drásticamente).
+
+    ---
+
+    🎯 **3. PUNTOS CLAVE Y TEMAS CENTRALES**
+    * Enumera los 3 a 5 ejes temáticos principales abordados durante la consulta.
+    * Resume brevemente las narrativas clave manifestadas por el paciente.
+
+    ---
+
+    🔤 **4. PALABRAS Y REFRANES RECURRENTES**
+    * Lista los conceptos, términos o muletillas más repetidos por el paciente que posean relevancia clínica.
+
+    ---
+
+    🌱 **5. INTERVENCIONES Y SUGERENCIAS PARA LA PRÓXIMA SESIÓN**
+    * Sugiere 2 o 3 hipótesis de trabajo o hilos conductuales para profundizar en el siguiente encuentro.
+    """
     return llamar_groq_api(prompt, api_key)
