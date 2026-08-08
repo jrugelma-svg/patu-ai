@@ -23,6 +23,9 @@ if "ultimo_informe" not in st.session_state:
 if "ultimo_nombre_paciente" not in st.session_state:
     st.session_state.ultimo_nombre_paciente = "Paciente"
 
+if "texto_transcrito_temp" not in st.session_state:
+    st.session_state.texto_transcrito_temp = None
+
 
 # 2. Función para codificar la imagen del logo a Base64
 def get_image_base64(path):
@@ -37,8 +40,6 @@ img_base64 = get_image_base64("logo.jpg")
 # 3. Función auxiliar para convertir el Markdown a un archivo .docx (Word)
 def generar_word_desde_markdown(texto_markdown):
     doc = Document()
-    
-    # Título principal del documento Word
     doc.add_heading('INFORME PSICOLÓGICO', level=1)
     
     lineas = texto_markdown.split('\n')
@@ -207,7 +208,7 @@ custom_css = """
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 5. Verificación de la API Key de Groq
+# 5. Verificación de la API Key
 api_key = os.getenv("GROQ_API_KEY") or os.getenv("GEMINI_API_KEY")
 
 if not api_key:
@@ -236,14 +237,14 @@ if st.session_state.modo_premium:
     <div style="text-align: center; margin-top: 10px; margin-bottom: 25px;">
         <span class="premium-badge">⭐ MÓDULO PREMIUM</span>
         <h2 style="margin: 5px 0;">Herramientas Diagnósticas e Informes Integrados</h2>
-        <p style="color: #64748B !important;">Genera reportes técnicos, procesa transcripciones extensas y consulta baterías psicométricas.</p>
+        <p style="color: #64748B !important;">Genera reportes técnicos, procesa audios/transcripciones extensas y consulta baterías psicométricas.</p>
     </div>
     ''', unsafe_allow_html=True)
 
     # Navegación interna por Pestañas
     tab_informe, tab_transcripcion, tab_pruebas = st.tabs([
         "📄 Generador de Informes (.docx)", 
-        "🎙️ Analizador de Transcripciones (120 min)", 
+        "🎙️ Analizador de Audios y Transcripciones", 
         "🧪 Buscador de Pruebas"
     ])
 
@@ -327,7 +328,7 @@ if st.session_state.modo_premium:
                 ''', unsafe_allow_html=True)
 
     # -----------------------------------------------------
-    # PESTAÑA 2: ANALIZADOR DE TRANCRIPCIONES (NUEVO)
+    # PESTAÑA 2: ANALIZADOR DE AUDIOS Y TRANCRIPCIONES
     # -----------------------------------------------------
     with tab_transcripcion:
         col_t_left, col_t_right = st.columns([0.45, 0.55], gap="large")
@@ -335,36 +336,69 @@ if st.session_state.modo_premium:
         with col_t_left:
             st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.markdown("### 🎙️ Procesador de Sesión Extensa")
-            st.caption("Pega la transcripción directa del audio o las notas brutas registradas durante la consulta de hasta 120 minutos.")
+            st.caption("Sube la grabación de audio de la consulta o pega directamente las notas/transcripción.")
 
-            transcripcion_input = st.text_area(
-                "Transcripción o Registro Verbal de la Sesión:",
-                placeholder="[Paciente 10:15]: Siento que ya no puedo con la presión del trabajo... \n[Terapeuta 10:16]: ¿Qué situaciones específicas han detonado esta sensación?...",
-                height=350
+            opcion_entrada = st.radio(
+                "Selecciona el origen de la sesión:",
+                ["📁 Subir Grabación de Audio", "✍️ Pegar Texto / Notas Directas"],
+                horizontal=True
             )
 
-            btn_analizar_transcripcion = st.button("🔍 Analizar Transcripción con IA", type="primary", use_container_width=True)
+            transcripcion_para_analizar = ""
+
+            if "Subir Grabación" in opcion_entrada:
+                audio_file = st.file_uploader(
+                    "Carga el archivo de audio (.mp3, .m4a, .wav, .ogg):",
+                    type=["mp3", "m4a", "wav", "ogg", "mp4"]
+                )
+                if audio_file:
+                    st.audio(audio_file)
+                    btn_procesar_audio = st.button("⚡ Transcribir Audio y Analizar con IA", type="primary", use_container_width=True)
+                    
+                    if btn_procesar_audio:
+                        with st.spinner("1/2 Transcribiendo audio con Whisper AI..."):
+                            texto_transcrito = engine.transcribir_audio_groq(audio_file, api_key)
+                            
+                        if texto_transcrito.startswith("⚠️"):
+                            st.error(texto_transcrito)
+                        else:
+                            st.success("✅ Transcripción completada con éxito.")
+                            st.session_state.texto_transcrito_temp = texto_transcrito
+                            transcripcion_para_analizar = texto_transcrito
+
+            else:
+                transcripcion_input = st.text_area(
+                    "Transcripción o Registro Verbal de la Sesión:",
+                    placeholder="[Paciente 10:15]: Siento que ya no puedo con la presión del trabajo...\n[Terapeuta 10:16]: ¿Qué situaciones específicas han detonado esta sensación?...",
+                    height=280
+                )
+                btn_analizar_texto = st.button("🔍 Analizar Texto de Sesión", type="primary", use_container_width=True)
+                if btn_analizar_texto:
+                    transcripcion_para_analizar = transcripcion_input
+
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_t_right:
             st.subheader("📊 Análisis Diagnóstico Cualitativo")
 
-            if btn_analizar_transcripcion:
-                if not transcripcion_input.strip():
-                    st.warning("⚠️ Ingresa el texto o transcripción de la sesión para analizar.")
-                else:
-                    with st.spinner("Procesando transcripción extensa, extrayendo estado afectivo y evaluando alertas de riesgo..."):
-                        resultado_transcripcion = engine.analizar_transcripcion_sesion(transcripcion_input, api_key)
-                        st.markdown('<div class="split-card">', unsafe_allow_html=True)
-                        st.markdown(resultado_transcripcion)
-                        st.markdown('</div>', unsafe_allow_html=True)
+            if transcripcion_para_analizar.strip():
+                with st.spinner("2/2 Analizando discurso, detectando afecto y evaluando alertas de riesgo..."):
+                    resultado_transcripcion = engine.analizar_transcripcion_sesion(transcripcion_para_analizar, api_key)
+                    
+                    if st.session_state.texto_transcrito_temp:
+                        with st.expander("📄 Ver Transcripción Literal Generada"):
+                            st.write(st.session_state.texto_transcrito_temp)
+                    
+                    st.markdown('<div class="split-card">', unsafe_allow_html=True)
+                    st.markdown(resultado_transcripcion)
+                    st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.markdown('''
                 <div class="split-card" style="text-align: center; padding: 50px 20px;">
                     <p style="font-size: 3rem; margin-bottom: 10px;">🎙️</p>
-                    <h3>Analizador de Diálogo Terapéutico</h3>
+                    <h3>Analizador de Audio y Diálogo Terapéutico</h3>
                     <p style="color: #78716C !important; font-size: 0.95rem; max-width: 420px; margin: 0 auto;">
-                        Pega la transcripción de una consulta de 45 a 120 minutos a la izquierda para extraer automáticamente <b>alertas de riesgo, afecto, palabras recurrentes y puntos clave</b>.
+                        Sube la <b>grabación de audio</b> o pega las <b>notas de la sesión</b> a la izquierda para extraer automáticamente <b>alertas de riesgo, afecto, palabras recurrentes y puntos clave</b>.
                     </p>
                 </div>
                 ''', unsafe_allow_html=True)
