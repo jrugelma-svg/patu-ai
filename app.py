@@ -2,10 +2,10 @@ import os
 import streamlit as st
 import engine
 
-# 1. Configuración inicial de la página
+# 1. Configuración inicial de la página (usando logo.jpg como ícono de pestaña)
 st.set_page_config(
     page_title="PATU AI - Asistente Clínico",
-    page_icon="🦆",
+    page_icon="logo.jpg",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -21,8 +21,15 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# 3. Encabezado principal de la aplicación
-st.title("🦆 PATU AI")
+# 3. Encabezado principal con la imagen de logo.jpg y el título alineados
+col_logo, col_titulo = st.columns([0.12, 0.88])
+
+with col_logo:
+    st.image("logo.jpg", width=75)
+
+with col_titulo:
+    st.title("PATU AI")
+
 st.caption("Asistente para Diagnóstico DSM-5-TR, Psicometría y Evaluación Multiaxial")
 
 st.markdown("---")
