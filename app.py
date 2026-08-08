@@ -1,6 +1,14 @@
 import os
+import base64
 import streamlit as st
 import engine
+
+# Función para convertir la imagen local a Base64
+def get_image_base64(path):
+    if os.path.exists(path):
+        with open(path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode()
+    return ""
 
 # 1. Configuración inicial de la página
 st.set_page_config(
@@ -21,17 +29,28 @@ hide_streamlit_style = """
 """
 st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
-# 3. Encabezado principal con logo en tamaño claro y alineación perfecta
-header_html = """
-<div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
-    <img src="app/static/logo.jpg" style="height: 110px; border-radius: 12px; object-fit: contain;" onerror="this.src='logo.jpg'">
-    <div>
-        <h1 style="margin: 0; padding: 0; font-size: 2.8rem; font-weight: 700; color: #FFFFFF;">PATU AI</h1>
-        <p style="margin: 5px 0 0 0; color: #AAAAAA; font-size: 1rem;">Asistente para Diagnóstico DSM-5-TR, Psicometría y Evaluación Multiaxial</p>
+# 3. Cargar la imagen en Base64
+img_base64 = get_image_base64("logo.jpg")
+
+if img_base64:
+    header_html = f"""
+    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 10px;">
+        <img src="data:image/jpeg;base64,{img_base64}" style="height: 100px; border-radius: 12px; object-fit: contain;">
+        <div>
+            <h1 style="margin: 0; padding: 0; font-size: 2.8rem; font-weight: 700; color: #FFFFFF;">PATU AI</h1>
+            <p style="margin: 5px 0 0 0; color: #AAAAAA; font-size: 1rem;">Asistente para Diagnóstico DSM-5-TR, Psicometría y Evaluación Multiaxial</p>
+        </div>
     </div>
-</div>
-"""
-st.markdown(header_html, unsafe_allow_html=True)
+    """
+    st.markdown(header_html, unsafe_allow_html=True)
+else:
+    # Respaldo si no encuentra el archivo logo.jpg
+    col1, col2 = st.columns([0.15, 0.85])
+    with col1:
+        st.image("logo.jpg", width=100)
+    with col2:
+        st.title("PATU AI")
+        st.caption("Asistente para Diagnóstico DSM-5-TR, Psicometría y Evaluación Multiaxial")
 
 st.markdown("---")
 
