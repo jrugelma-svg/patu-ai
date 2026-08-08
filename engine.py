@@ -6,7 +6,7 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 
 def llamar_groq_api(prompt, api_key):
     """
-    Realiza una solicitud HTTP directa a la API de Groq.
+    Realiza una solicitud HTTP directa a la API de Groq para procesamiento de texto.
     """
     url = "https://api.groq.com/openai/v1/chat/completions"
     
@@ -40,6 +40,10 @@ def llamar_groq_api(prompt, api_key):
         return f"⚠️ Error de conexión: {str(e)}"
 
 
+# =========================================================
+# FUNCIONES DE WORKSTATION RÁPIDO
+# =========================================================
+
 def analizar_caso_inicial(texto_caso, api_key):
     prompt = f"""
     Actúa como un Supervisor Clínico y Experto en Diagnóstico DSM-5-TR / CIE-10.
@@ -67,7 +71,7 @@ def obtener_pruebas_psicometricas(texto_caso, api_key):
     Como experto en Evaluación y Psicometría Clínica, analiza este caso:
     "{texto_caso}"
 
-    Genera una lista de pruebas psicometricas, escalas o test validados recomendados para evaluar o descartar las hipótesis clínicas de este caso.
+    Genera una lista de pruebas psicométricas, escalas o test validados recomendados para evaluar o descartar las hipótesis clínicas de este caso.
 
     PRESENTA LOS RESULTADOS EN EL SIGUIENTE FORMATO MARKDOWN:
     ### 🧪 Batería de Pruebas Psicométricas Recomendadas
@@ -185,8 +189,35 @@ def buscar_recursos_pruebas(nombre_prueba: str, api_key: str):
 
 
 # =========================================================
-# HERRAMIENTAS DIAGNÓSTICAS AVANZADAS
+# HERRAMIENTAS DIAGNÓSTICAS AVANZADAS (AUDIO & TRANCRIPCIÓN)
 # =========================================================
+
+def transcribir_audio_groq(archivo_audio, api_key: str):
+    """
+    Envía un archivo de audio grabado a la API de Groq usando Whisper-Large-v3-Turbo 
+    y devuelve la transcripción literal en texto.
+    """
+    url = "https://api.groq.com/openai/v1/audio/transcriptions"
+    headers = {"Authorization": f"Bearer {api_key}"}
+    
+    files = {
+        'file': (archivo_audio.name, archivo_audio.getvalue(), archivo_audio.type),
+        'model': (None, 'whisper-large-v3-turbo'),
+        'language': (None, 'es')
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, files=files, timeout=120)
+        data = response.json()
+        
+        if response.status_code == 200:
+            return data.get('text', '')
+        else:
+            error_msg = data.get('error', {}).get('message', 'Error desconocido')
+            return f"⚠️ Error en transcripción ({response.status_code}): {error_msg}"
+    except Exception as e:
+        return f"⚠️ Error de conexión al procesar audio: {str(e)}"
+
 
 def analizar_transcripcion_sesion(texto_transcripcion: str, api_key: str):
     """
