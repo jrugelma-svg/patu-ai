@@ -16,6 +16,22 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
+# 🔑 API KEY DE GROQ (LECTURA DESDE SECRETS DE STREAMLIT)
+# ---------------------------------------------------------
+# Dejar vacío en el código para que GitHub no bloquee la clave
+GROQ_API_KEY_DIRECTA = ""
+
+# Intenta tomar la clave directa si existiera, o la busca en Secrets de Streamlit Cloud
+api_key = GROQ_API_KEY_DIRECTA.strip()
+
+if not api_key:
+    try:
+        if "GROQ_API_KEY" in st.secrets:
+            api_key = str(st.secrets["GROQ_API_KEY"]).strip()
+    except Exception:
+        pass
+
+# ---------------------------------------------------------
 # ESTADOS DE SESIÓN (SESSION STATE)
 # ---------------------------------------------------------
 if "historial" not in st.session_state:
@@ -52,7 +68,7 @@ if "ultimo_psicoeducacion" not in st.session_state:
     st.session_state.ultimo_psicoeducacion = None
 
 # ---------------------------------------------------------
-# ESTILOS CSS PERSONALIZADOS (COMPATIBLES CON MODO OSCURO Y CLARO)
+# ESTILOS CSS PERSONALIZADOS
 # ---------------------------------------------------------
 st.markdown("""
     <style>
@@ -129,23 +145,8 @@ def generar_word_desde_markdown(texto_markdown):
 
 
 # ---------------------------------------------------------
-# BARRA LATERAL (SIDEBAR) - CONFIGURACIÓN DE API KEY DIRECTA
+# BARRA LATERAL (SIDEBAR)
 # ---------------------------------------------------------
-
-# 🔑 >>> PEGA TU API KEY DE GROQ AQUÍ ENTRE LAS COMILLAS <<<
-GROQ_API_KEY_DIRECTA = "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"
-
-# Lógica para usar la clave ingresada o los secrets si existieran
-api_key = GROQ_API_KEY_DIRECTA.strip()
-
-if not api_key or api_key == "gsk_TU_CLAVE_AQUI_PEGA_AQ":
-    # Intentar buscar en st.secrets si no se ha pegado arriba
-    try:
-        if "GROQ_API_KEY" in st.secrets:
-            api_key = str(st.secrets["GROQ_API_KEY"]).strip()
-    except Exception:
-        pass
-
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/387/387561.png", width=65)
     st.title("Workstation Clínico")
@@ -231,7 +232,7 @@ if st.session_state.modo_premium:
 
             if btn_generar_informe:
                 if not api_key:
-                    st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                    st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
                 else:
                     datos_dict = {
                         "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
@@ -298,7 +299,7 @@ if st.session_state.modo_premium:
                     
                     if btn_procesar_audio:
                         if not api_key:
-                            st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                            st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
                         else:
                             with st.spinner("1/2 Transcribiendo audio con Whisper AI..."):
                                 texto_transcrito = engine.transcribir_audio_groq(audio_file, api_key)
@@ -325,7 +326,7 @@ if st.session_state.modo_premium:
 
             if transcripcion_para_analizar.strip():
                 if not api_key:
-                    st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                    st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
                 else:
                     with st.spinner("2/2 Analizando discurso, detectando afecto y evaluando alertas de riesgo..."):
                         resultado_transcripcion = engine.analizar_transcripcion_sesion(transcripcion_para_analizar, api_key)
@@ -374,7 +375,7 @@ if st.session_state.modo_premium:
 
             if btn_generar_psicoed:
                 if not api_key:
-                    st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                    st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
                 elif not diagnostico_psico.strip():
                     st.warning("⚠️ Ingresa la información clínica o diagnóstico a traducir.")
                 else:
@@ -418,7 +419,7 @@ if st.session_state.modo_premium:
 
         if btn_buscar_prueba:
             if not api_key:
-                st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
             elif not prueba_query.strip():
                 st.warning("⚠️ Escribe el nombre o acrónimo de la prueba a buscar.")
             else:
@@ -481,7 +482,7 @@ else:
 
         if btn_paso1:
             if not api_key:
-                st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
             elif not st.session_state.caso_actual.strip():
                 st.warning("⚠️ Escriba una narrativa o caso clínico primero.")
             else:
@@ -491,7 +492,7 @@ else:
 
         if 'btn_paso2' in locals() and btn_paso2:
             if not api_key:
-                st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
             else:
                 with st.spinner("Generando sugerencias de baterías y pruebas psicométricas..."):
                     res_p = engine.obtener_pruebas_psicometricas(st.session_state.caso_actual, api_key)
@@ -499,7 +500,7 @@ else:
 
         if 'btn_paso3' in locals() and btn_paso3:
             if not api_key:
-                st.error("⚠️ Configura tu API Key en la línea 105 de app.py")
+                st.error("⚠️ No se detectó la API Key en los Secrets de Streamlit Cloud.")
             else:
                 with st.spinner("Integrando datos y formulando evaluación multiaxial completa..."):
                     res_m = engine.generar_diagnostico_multiaxial(
