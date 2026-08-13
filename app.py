@@ -94,30 +94,41 @@ st.markdown("""
 # BANNER ENCABEZADO V3.0
 # =========================================================
 st.markdown("""
-    <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 1.8rem; border-radius: 16px; margin-bottom: 2rem; color: white; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-        <h2 style="color: #FFFFFF !important; margin: 0; font-size: 1.8rem;">🧠 Workstation Clínico <span style="font-size: 0.85rem; background: #2563EB; padding: 4px 12px; border-radius: 20px; vertical-align: middle; margin-left: 8px;">v3.0 PRO</span></h2>
-        <p style="color: #94A3B8; margin-top: 0.4rem; margin-bottom: 0;">Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica</p>
+    <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 1.8rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+        <h2 style="color: #FFFFFF !important; margin: 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
+            🧠 <span style="color: #FFFFFF !important;">Workstation Clínico</span> 
+            <span style="font-size: 0.85rem; background: #2563EB; color: #FFFFFF !important; padding: 4px 12px; border-radius: 20px;">v3.0 PRO</span>
+        </h2>
+        <p style="color: #CBD5E1 !important; margin-top: 0.5rem; margin-bottom: 0; font-size: 0.95rem;">
+            Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica
+        </p>
     </div>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BARRA LATERAL (SIDEBAR) - LOGO, API KEY Y CONFIGURACIÓN
+# BARRA LATERAL (SIDEBAR) - LOGO Y GESTIÓN AUTOMÁTICA DE API KEY
 # =========================================================
 with st.sidebar:
-    # Carga de tu logo institucional/clínico
     try:
         st.image("logo.jpg", use_container_width=True)
     except Exception:
-        pass  # Si el archivo no estuviese presente, no frena la ejecución
+        pass
 
     st.title("⚙️ Configuración")
-    api_key = st.text_input("🔑 Groq API Key:", type="password", help="Ingresa tu clave de API de Groq para activar las funciones")
-    st.divider()
-    st.markdown("### 📌 Estado del Sistema")
-    if api_key:
-        st.success("API Key Conectada", icon="✅")
+    
+    # Intenta obtener la API Key automáticamente de los Secrets
+    api_key_secret = st.secrets.get("GROQ_API_KEY", "")
+    
+    if api_key_secret:
+        api_key = api_key_secret
+        st.success("API Key Conectada Automáticamente", icon="⚡")
     else:
-        st.warning("Ingrese su API Key para comenzar", icon="⚠️")
+        api_key = st.text_input("🔑 Groq API Key:", type="password", help="Ingresa tu clave de API de Groq para activar las funciones")
+        if api_key:
+            st.success("API Key Conectada", icon="✅")
+        else:
+            st.warning("Ingrese su API Key para comenzar", icon="⚠️")
+            
     st.divider()
     st.caption("Workstation Clínico v3.0 | Módulo Psicológico")
 
