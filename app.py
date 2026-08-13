@@ -91,7 +91,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BANNER ENCABEZADO V3.0
+# BANNER ENCABEZADO V3.0 (TÍTULO EN BLANCO VISIBLE)
 # =========================================================
 st.markdown("""
     <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 1.8rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
@@ -106,7 +106,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BARRA LATERAL (SIDEBAR) - LOGO Y GESTIÓN AUTOMÁTICA DE API KEY
+# BARRA LATERAL (SIDEBAR) - LOGO Y GESTIÓN DE API KEY
 # =========================================================
 with st.sidebar:
     try:
