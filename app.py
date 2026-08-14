@@ -5,54 +5,49 @@ import engine
 # CONFIGURACIÓN DE PÁGINA
 # =========================================================
 st.set_page_config(
-    page_title="Workstation Clínico v3.0 PRO",
+    page_title="PATU | Workstation Clínico v3.0 PRO",
     page_icon="🧠",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # =========================================================
-# ESTILOS CSS - REDISEÑO ESTÉTICO UX/UI v3.0
+# ESTILOS CSS - UX/UI LIMPIO Y PROFESIONAL PARA PRESENTACIÓN
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. Fondo General y Fuentes */
+    /* Fondo general claro y tipografía legible */
     .main {
         background-color: #F8FAFC;
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     
-    /* 2. Ocultar menús nativos de Streamlit */
+    /* Ocultar elementos nativos innecesarios */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header {visibility: hidden;}
     
-    /* 3. Encabezados Principales */
-    h1, h2, h3 {
-        color: #1E293B !important;
-        font-weight: 700 !important;
-    }
-    
-    /* 4. Estilo de Pestañas (Tabs) */
+    /* Estilo para las Pestañas (Tabs) */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 10px;
         background-color: #E2E8F0;
-        padding: 6px;
+        padding: 8px 12px;
         border-radius: 12px;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 42px;
+        height: 44px;
         border-radius: 8px;
-        color: #475569;
-        font-weight: 600;
+        color: #334155 !important;
+        font-weight: 600 !important;
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
         background-color: #FFFFFF !important;
         color: #2563EB !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.08) !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
     }
 
-    /* 5. Botones Principales */
+    /* Estilo para Botones Principales */
     .stButton > button {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         color: #FFFFFF !important;
@@ -60,68 +55,58 @@ st.markdown("""
         border-radius: 10px !important;
         padding: 0.6rem 1.2rem !important;
         font-weight: 600 !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
         transition: all 0.2s ease-in-out !important;
         width: 100%;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3) !important;
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
     }
 
-    /* 6. Inputs, Textareas y Selects */
-    .stTextInput input, .stTextArea textarea, .stSelectbox select {
-        border-radius: 10px !important;
-        border: 1px solid #CBD5E1 !important;
-        background-color: #FFFFFF !important;
-    }
-    .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-    }
-
-    /* 7. Barra Lateral (Sidebar) */
+    /* Barra Lateral (Sidebar) */
     section[data-testid="stSidebar"] {
         background-color: #0F172A !important;
     }
     section[data-testid="stSidebar"] * {
         color: #F8FAFC !important;
     }
+    
+    /* Cajas de texto e inputs */
+    .stTextInput input, .stTextArea textarea, .stSelectbox select {
+        border-radius: 10px !important;
+        border: 1px solid #CBD5E1 !important;
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BANNER ENCABEZADO V3.0 (TÍTULO EN BLANCO VISIBLE)
-# =========================================================
-st.markdown("""
-    <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 1.8rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
-        <h2 style="color: #FFFFFF !important; margin: 0; font-size: 1.8rem; display: flex; align-items: center; gap: 10px;">
-            🧠 <span style="color: #FFFFFF !important;">Workstation Clínico</span> 
-            <span style="font-size: 0.85rem; background: #2563EB; color: #FFFFFF !important; padding: 4px 12px; border-radius: 20px;">v3.0 PRO</span>
-        </h2>
-        <p style="color: #CBD5E1 !important; margin-top: 0.5rem; margin-bottom: 0; font-size: 0.95rem;">
-            Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica
-        </p>
-    </div>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# BARRA LATERAL (SIDEBAR) - LOGO Y GESTIÓN DE API KEY
+# BARRA LATERAL (SIDEBAR) - LOGO E IDENTIDAD
 # =========================================================
 with st.sidebar:
+    # Mostramos el logo dentro de un contenedor blanco limpio para que resalte
+    st.markdown("""
+        <div style="background-color: #FFFFFF; padding: 12px; border-radius: 14px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+    """, unsafe_allow_html=True)
+    
     try:
         st.image("logo.jpg", use_container_width=True)
     except Exception:
-        pass
+        # Si por alguna razón logo.jpg no carga, muestra un logo estilizado en texto
+        st.markdown("<h2 style='color:#2563EB; margin:0; font-weight:800;'>🦆 PATU AI</h2>", unsafe_allow_html=True)
+        
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.title("⚙️ Configuración")
+    st.markdown("### ⚙️ Configuración")
     
-    # Intenta obtener la API Key automáticamente de los Secrets
+    # Intenta obtener la API Key automáticamente de Secrets de Streamlit
     api_key_secret = st.secrets.get("GROQ_API_KEY", "")
     
     if api_key_secret:
         api_key = api_key_secret
-        st.success("API Key Conectada Automáticamente", icon="⚡")
+        st.success("Sistema Conectado", icon="⚡")
     else:
         api_key = st.text_input("🔑 Groq API Key:", type="password", help="Ingresa tu clave de API de Groq para activar las funciones")
         if api_key:
@@ -130,7 +115,27 @@ with st.sidebar:
             st.warning("Ingrese su API Key para comenzar", icon="⚠️")
             
     st.divider()
-    st.caption("Workstation Clínico v3.0 | Módulo Psicológico")
+    st.caption("PATU Workstation Clínico v3.0 PRO\nMódulo de Asistencia Psicológica")
+
+# =========================================================
+# BANNER SUPERIOR - ENCABEZADO CLARO Y PROFESIONAL
+# =========================================================
+# Usamos un diseño de tarjeta clara con borde azul vibrante (100% visible y elegante)
+st.markdown("""
+    <div style="background-color: #FFFFFF; border-left: 6px solid #2563EB; padding: 20px 24px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+            <div>
+                <h1 style="color: #0F172A !important; margin: 0; font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
+                    🧠 Workstation Clínico 
+                    <span style="font-size: 0.8rem; background-color: #2563EB; color: #FFFFFF !important; padding: 4px 12px; border-radius: 20px; font-weight: 600;">v3.0 PRO</span>
+                </h1>
+                <p style="color: #475569 !important; margin: 6px 0 0 0; font-size: 0.95rem;">
+                    Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica
+                </p>
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
 
 # =========================================================
 # PESTAÑAS PRINCIPALES DE LA APLICACIÓN
@@ -205,7 +210,7 @@ with tab2:
                 st.markdown(res)
 
 # ---------------------------------------------------------
-# TAB 3: GENERADOR DE INFORMES (.DOCX / MARKDOWN)
+# TAB 3: GENERADOR DE INFORMES
 # ---------------------------------------------------------
 with tab3:
     st.subheader("📄 Generador de Informes Psicológicos")
