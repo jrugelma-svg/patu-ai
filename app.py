@@ -1,5 +1,7 @@
 import streamlit as st
 import engine
+from PIL import Image
+import os
 
 # =========================================================
 # CONFIGURACIÓN DE PÁGINA
@@ -12,72 +14,96 @@ st.set_page_config(
 )
 
 # =========================================================
-# ESTILOS CSS - UX/UI LIMPIO Y PROFESIONAL PARA PRESENTACIÓN
+# ESTILOS CSS - DISEÑO PREMIUM Y MODERNO CON PERSONALIDAD
 # =========================================================
 st.markdown("""
     <style>
-    /* Fondo general claro y tipografía legible */
+    /* Fondo General Clínico Suave */
     .main {
-        background-color: #F8FAFC;
+        background-color: #F1F5F9;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     
-    /* Ocultar elementos nativos innecesarios */
+    /* Ocultar elementos sobrantes */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Estilo para las Pestañas (Tabs) */
+    /* Pestañas (Tabs) con Colores Vivos y Sombra */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 10px;
-        background-color: #E2E8F0;
+        gap: 12px;
+        background: #E2E8F0;
         padding: 8px 12px;
-        border-radius: 12px;
+        border-radius: 14px;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
     }
     .stTabs [data-baseweb="tab"] {
-        height: 44px;
-        border-radius: 8px;
+        height: 46px;
+        border-radius: 10px;
         color: #334155 !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
         border: none !important;
+        transition: all 0.2s ease-in-out;
     }
     .stTabs [aria-selected="true"] {
-        background-color: #FFFFFF !important;
-        color: #2563EB !important;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
     }
 
-    /* Estilo para Botones Principales */
+    /* Botones de Acción con Efecto Gradient Pro */
     .stButton > button {
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%) !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 10px !important;
-        padding: 0.6rem 1.2rem !important;
-        font-weight: 600 !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+        padding: 0.75rem 1.5rem !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
         transition: all 0.2s ease-in-out !important;
         width: 100%;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
     }
 
-    /* Barra Lateral (Sidebar) */
+    /* Barra Lateral (Sidebar) Estilo Dark Navy */
     section[data-testid="stSidebar"] {
-        background-color: #0F172A !important;
+        background: #0F172A !important;
     }
     section[data-testid="stSidebar"] * {
         color: #F8FAFC !important;
     }
-    
-    /* Cajas de texto e inputs */
+
+    /* Cajas de Texto y Entradas */
     .stTextInput input, .stTextArea textarea, .stSelectbox select {
         border-radius: 10px !important;
-        border: 1px solid #CBD5E1 !important;
+        border: 1.5px solid #CBD5E1 !important;
         background-color: #FFFFFF !important;
         color: #0F172A !important;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #2563EB !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+    }
+
+    /* Forzar visibilidad total de textos en el banner superior */
+    .banner-title {
+        color: #FFFFFF !important;
+        font-size: 2rem !important;
+        font-weight: 800 !important;
+        margin: 0 !important;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .banner-subtitle {
+        color: #E2E8F0 !important;
+        font-size: 1rem !important;
+        margin-top: 6px !important;
+        margin-bottom: 0 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -86,16 +112,31 @@ st.markdown("""
 # BARRA LATERAL (SIDEBAR) - LOGO E IDENTIDAD
 # =========================================================
 with st.sidebar:
-    # Mostramos el logo dentro de un contenedor blanco limpio para que resalte
+    # Contenedor blanco con sombra para resaltar el logo sin importar el fondo
     st.markdown("""
-        <div style="background-color: #FFFFFF; padding: 12px; border-radius: 14px; text-align: center; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <div style="background-color: #FFFFFF; padding: 15px; border-radius: 16px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
     """, unsafe_allow_html=True)
     
-    try:
-        st.image("logo.jpg", use_container_width=True)
-    except Exception:
-        # Si por alguna razón logo.jpg no carga, muestra un logo estilizado en texto
-        st.markdown("<h2 style='color:#2563EB; margin:0; font-weight:800;'>🦆 PATU AI</h2>", unsafe_allow_html=True)
+    # Intentamos cargar la imagen de logo probando variaciones de nombre de archivo
+    logo_cargado = False
+    for posib_logo in ["logo.jpg", "logo.JPG", "logo.jpeg", "logo.png", "LOGO.JPG"]:
+        if os.path.exists(posib_logo):
+            try:
+                img = Image.open(posib_logo)
+                st.image(img, use_container_width=True)
+                logo_cargado = True
+                break
+            except Exception:
+                pass
+                
+    if not logo_cargado:
+        # Fallback elegante si la ruta del archivo fallara
+        st.markdown("""
+            <div style='padding: 10px;'>
+                <h1 style='color: #2563EB !important; margin:0; font-size: 2.2rem; font-weight: 900;'>🦆 PATU</h1>
+                <p style='color: #475569 !important; font-size: 0.8rem; margin:0; font-weight:700;'>PSYCHOLOGISTS UNITED</p>
+            </div>
+        """, unsafe_allow_html=True)
         
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -118,18 +159,18 @@ with st.sidebar:
     st.caption("PATU Workstation Clínico v3.0 PRO\nMódulo de Asistencia Psicológica")
 
 # =========================================================
-# BANNER SUPERIOR - ENCABEZADO CLARO Y PROFESIONAL
+# BANNER SUPERIOR CON ESTILO AZUL/VIOLETA VIBRANTE
 # =========================================================
-# Usamos un diseño de tarjeta clara con borde azul vibrante (100% visible y elegante)
 st.markdown("""
-    <div style="background-color: #FFFFFF; border-left: 6px solid #2563EB; padding: 20px 24px; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+    <div style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #4F46E5 100%); padding: 1.8rem 2.2rem; border-radius: 18px; margin-bottom: 1.8rem; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <span style="font-size: 2.5rem;">🧠</span>
             <div>
-                <h1 style="color: #0F172A !important; margin: 0; font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px;">
-                    🧠 Workstation Clínico 
-                    <span style="font-size: 0.8rem; background-color: #2563EB; color: #FFFFFF !important; padding: 4px 12px; border-radius: 20px; font-weight: 600;">v3.0 PRO</span>
+                <h1 class="banner-title">
+                    Workstation Clínico 
+                    <span style="font-size: 0.85rem; background: #38BDF8; color: #0F172A !important; padding: 4px 14px; border-radius: 20px; font-weight: 800; vertical-align: middle; margin-left: 10px;">v3.0 PRO</span>
                 </h1>
-                <p style="color: #475569 !important; margin: 6px 0 0 0; font-size: 0.95rem;">
+                <p class="banner-subtitle">
                     Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica
                 </p>
             </div>
@@ -235,7 +276,7 @@ with tab3:
         else:
             datos_dict = {
                 "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
-                "motivo": motivo, "problema_actual": problema_actual,
+                "motivo": motivo, "problema_actual": problem_actual,
                 "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
                 "diagnostico": diagnostico
             }
