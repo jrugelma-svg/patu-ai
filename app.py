@@ -2,6 +2,7 @@ import streamlit as st
 import engine
 from PIL import Image
 import os
+import base64
 
 # =========================================================
 # CONFIGURACIÓN DE PÁGINA
@@ -13,64 +14,72 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Cargar la imagen del logo en base64 para incrustarla directo en el banner
+def get_image_base64(path):
+    for posib in [path, "logo.JPG", "logo.jpeg", "logo.png", "LOGO.JPG"]:
+        if os.path.exists(posib):
+            with open(posib, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode()
+    return None
+
+logo_b64 = get_image_base64("logo.jpg")
+
 # =========================================================
-# ESTILOS CSS - DISEÑO PREMIUM Y MODERNO CON PERSONALIDAD
+# ESTILOS CSS - PALETA DE COLORES PERSONALIZADA PATU
 # =========================================================
 st.markdown("""
     <style>
-    /* Fondo General Clínico Suave */
+    /* 1. Fondo General Cálico y Amigable */
     .main {
-        background-color: #F1F5F9;
+        background-color: #FAFAF9 !important;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
     
-    /* Ocultar elementos sobrantes */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
+    #MainMenu, footer, header {visibility: hidden;}
     
-    /* Pestañas (Tabs) con Colores Vivos y Sombra */
+    /* 2. Estilo de Pestañas (Tabs) con tonos Verde y Salmón PATU */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 12px;
-        background: #E2E8F0;
+        gap: 10px;
+        background: #F1F5F9;
         padding: 8px 12px;
-        border-radius: 14px;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        border-radius: 16px;
+        border: 1px solid #E2E8F0;
     }
     .stTabs [data-baseweb="tab"] {
-        height: 46px;
-        border-radius: 10px;
-        color: #334155 !important;
+        height: 44px;
+        border-radius: 12px;
+        color: #475569 !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
+        font-size: 0.92rem !important;
         border: none !important;
         transition: all 0.2s ease-in-out;
     }
+    /* Pestaña Seleccionada: Verde Patito Vibrante */
     .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
         color: #FFFFFF !important;
-        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3) !important;
     }
 
-    /* Botones de Acción con Efecto Gradient Pro */
+    /* 3. Botones Principales estilo Coral/Salmón PATU */
     .stButton > button {
-        background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%) !important;
+        background: linear-gradient(135deg, #FF7E7A 0%, #E05652 100%) !important;
         color: #FFFFFF !important;
         border: none !important;
-        border-radius: 10px !important;
-        padding: 0.75rem 1.5rem !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 1.4rem !important;
         font-weight: 700 !important;
         font-size: 0.95rem !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+        box-shadow: 0 4px 14px rgba(255, 126, 122, 0.35) !important;
         transition: all 0.2s ease-in-out !important;
         width: 100%;
     }
     .stButton > button:hover {
         transform: translateY(-2px) !important;
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45) !important;
+        box-shadow: 0 6px 20px rgba(255, 126, 122, 0.5) !important;
     }
 
-    /* Barra Lateral (Sidebar) Estilo Dark Navy */
+    /* 4. Barra Lateral (Sidebar) Estilo Noche Cálida */
     section[data-testid="stSidebar"] {
         background: #0F172A !important;
     }
@@ -78,71 +87,56 @@ st.markdown("""
         color: #F8FAFC !important;
     }
 
-    /* Cajas de Texto y Entradas */
+    /* 5. Cajas de Texto e Inputs con Bordes Verdes Suaves al enfocar */
     .stTextInput input, .stTextArea textarea, .stSelectbox select {
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         border: 1.5px solid #CBD5E1 !important;
         background-color: #FFFFFF !important;
         color: #0F172A !important;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
     }
     .stTextInput input:focus, .stTextArea textarea:focus {
-        border-color: #2563EB !important;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
-    }
-
-    /* Forzar visibilidad total de textos en el banner superior */
-    .banner-title {
-        color: #FFFFFF !important;
-        font-size: 2rem !important;
-        font-weight: 800 !important;
-        margin: 0 !important;
-        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-    .banner-subtitle {
-        color: #E2E8F0 !important;
-        font-size: 1rem !important;
-        margin-top: 6px !important;
-        margin-bottom: 0 !important;
+        border-color: #22C55E !important;
+        box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2) !important;
     }
     </style>
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BARRA LATERAL (SIDEBAR) - LOGO E IDENTIDAD
+# BANNER PRINCIPAL CON LOGO INTEGRADÍSIMO Y COLORES PATU
+# =========================================================
+if logo_b64:
+    logo_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="height: 80px; width: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); background: white; padding: 4px;">'
+else:
+    logo_html = '<div style="font-size: 3rem;">🦆</div>'
+
+st.markdown(f"""
+    <div style="background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%); padding: 1.4rem 2rem; border-radius: 18px; margin-bottom: 1.8rem; box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.25); border-left: 8px solid #FF7E7A;">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                {logo_html}
+                <div>
+                    <h1 style="color: #FFFFFF !important; margin: 0; font-size: 1.9rem; font-weight: 800; display: flex; align-items: center; gap: 12px;">
+                        Workstation Clínico
+                        <span style="font-size: 0.8rem; background: linear-gradient(135deg, #22C55E 0%, #16A34A 100%); color: #FFFFFF !important; padding: 4px 14px; border-radius: 20px; font-weight: 700;">v3.0 PRO</span>
+                    </h1>
+                    <p style="color: #FDBA74 !important; margin: 4px 0 0 0; font-size: 0.95rem; font-weight: 600;">
+                        PATU — Psychologists United Across America
+                    </p>
+                </div>
+            </div>
+            <div style="background: rgba(255, 126, 122, 0.12); padding: 8px 16px; border-radius: 12px; border: 1px solid rgba(255, 126, 122, 0.3);">
+                <span style="color: #FF7E7A; font-size: 0.85rem; font-weight: 700;">🧠 Módulo Clínico Activo</span>
+            </div>
+        </div>
+    </div>
+""", unsafe_allow_html=True)
+
+# =========================================================
+# BARRA LATERAL (SIDEBAR)
 # =========================================================
 with st.sidebar:
-    # Contenedor blanco con sombra para resaltar el logo sin importar el fondo
-    st.markdown("""
-        <div style="background-color: #FFFFFF; padding: 15px; border-radius: 16px; text-align: center; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
-    """, unsafe_allow_html=True)
-    
-    # Intentamos cargar la imagen de logo probando variaciones de nombre de archivo
-    logo_cargado = False
-    for posib_logo in ["logo.jpg", "logo.JPG", "logo.jpeg", "logo.png", "LOGO.JPG"]:
-        if os.path.exists(posib_logo):
-            try:
-                img = Image.open(posib_logo)
-                st.image(img, use_container_width=True)
-                logo_cargado = True
-                break
-            except Exception:
-                pass
-                
-    if not logo_cargado:
-        # Fallback elegante si la ruta del archivo fallara
-        st.markdown("""
-            <div style='padding: 10px;'>
-                <h1 style='color: #2563EB !important; margin:0; font-size: 2.2rem; font-weight: 900;'>🦆 PATU</h1>
-                <p style='color: #475569 !important; font-size: 0.8rem; margin:0; font-weight:700;'>PSYCHOLOGISTS UNITED</p>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("</div>", unsafe_allow_html=True)
-
     st.markdown("### ⚙️ Configuración")
     
-    # Intenta obtener la API Key automáticamente de Secrets de Streamlit
     api_key_secret = st.secrets.get("GROQ_API_KEY", "")
     
     if api_key_secret:
@@ -156,27 +150,7 @@ with st.sidebar:
             st.warning("Ingrese su API Key para comenzar", icon="⚠️")
             
     st.divider()
-    st.caption("PATU Workstation Clínico v3.0 PRO\nMódulo de Asistencia Psicológica")
-
-# =========================================================
-# BANNER SUPERIOR CON ESTILO AZUL/VIOLETA VIBRANTE
-# =========================================================
-st.markdown("""
-    <div style="background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #4F46E5 100%); padding: 1.8rem 2.2rem; border-radius: 18px; margin-bottom: 1.8rem; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <span style="font-size: 2.5rem;">🧠</span>
-            <div>
-                <h1 class="banner-title">
-                    Workstation Clínico 
-                    <span style="font-size: 0.85rem; background: #38BDF8; color: #0F172A !important; padding: 4px 14px; border-radius: 20px; font-weight: 800; vertical-align: middle; margin-left: 10px;">v3.0 PRO</span>
-                </h1>
-                <p class="banner-subtitle">
-                    Plataforma Integrada de Evaluación Diagnóstica, Psicométrica y Asistencia Terapéutica
-                </p>
-            </div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
+    st.caption("PATU Workstation Clínico v3.0 PRO\nPsychologists United")
 
 # =========================================================
 # PESTAÑAS PRINCIPALES DE LA APLICACIÓN
@@ -276,7 +250,7 @@ with tab3:
         else:
             datos_dict = {
                 "nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion,
-                "motivo": motivo, "problema_actual": problem_actual,
+                "motivo": motivo, "problema_actual": problema_actual,
                 "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
                 "diagnostico": diagnostico
             }
