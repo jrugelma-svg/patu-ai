@@ -1,3 +1,4 @@
 streamlit
 groq
-duckduckgo_search
+python-docx
+pillow
