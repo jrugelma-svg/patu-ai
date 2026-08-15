@@ -24,7 +24,7 @@ def crear_documento_word(titulo, contenido_texto):
     doc = docx.Document()
     
     # Encabezado / Título
-    h = doc.add_heading(titulo, level=1)
+    doc.add_heading(titulo, level=1)
     
     # Agregar párrafos
     lineas = contenido_texto.split('\n')
@@ -233,12 +233,16 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key="")
 
 def transcribir_audio_groq(archivo_audio, api_key):
     """
-    Transcribe un archivo de audio mediante la API de Whisper en Groq.
+    Transcribe un archivo de audio (o grabado en vivo) mediante la API de Whisper en Groq.
     """
     try:
         client = groq.Groq(api_key=api_key)
+        
+        # Verificar si viene de st.audio_input o subida de archivos
+        nombre_archivo = getattr(archivo_audio, 'name', 'dictado_voz.wav')
+        
         transcription = client.audio.transcriptions.create(
-            file=(archivo_audio.name, archivo_audio.read()),
+            file=(nombre_archivo, archivo_audio.read()),
             model="whisper-large-v3",
             response_format="text",
             language="es"
@@ -323,7 +327,7 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, edad_pacie
         Genera un informe psicométrico de corrección e interpretación que incluya:
         1. **Clasificación y Rango Normativo:** Para cada puntaje/subescala (ej. Muy Alto, Superior, Promedio, Bajo, Clínicamente Significativo).
         2. **Análisis Cualitativo e Interpretación:** Significado clínico de los hallazgos en relación con las funciones cognitivas, emocionales o conductuales evaluadas.
-        3. **Sugerencia de Síntesis para el Informe:** Un párrafo listo para copiar y pegar en la sección de "Resultados Psicométricos" de un informe clínico.
+        3. **Sugerencia de Síntesis para el Informe:** Un párrafo listo para copiar y pagar en la sección de "Resultados Psicométricos" de un informe clínico.
         """
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
