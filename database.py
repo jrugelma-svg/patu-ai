@@ -9,17 +9,17 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# =========================================================
-# LISTA DE CORREOS VIP / DESARROLLADORES (ACCESO ILIMITADO)
-# Agrega o modifica aquí los 6 correos exactos de tu equipo:
-# =========================================================
+# ==============================================================================
+# LISTA DE CORREOS VIP / DESARROLLADORES (ACCESO ILIMITADO AUTOMÁTICO)
+# Coloca aquí los 6 correos de tu equipo (incluso antes de que se registren).
+# ==============================================================================
 ADMIN_EMAILS = [
-    "admin@patu.ai",
-    "desarrollador1@patu.ai",
-    "desarrollador2@patu.ai",
-    "desarrollador3@patu.ai",
-    "desarrollador4@patu.ai",
-    "desarrollador5@patu.ai",
+    "jrugelma@ucvvirtual.edu.pe",  # Tu correo
+    "asullonfe@ucvvirtual.edu.pe",   # Correo 2
+    "djuarezro@ucvvirtual.edu.pe",   # Correo 3
+    "maryeli25056@gmail.com",   # Correo 4
+    "favioreyes@ucvvirtual.edu.pe",   # Correo 5
+    "rugeljhoan@gmail.com",   # Correo 6
 ]
 
 def registrar_usuario(nombre, email, password):
@@ -27,8 +27,9 @@ def registrar_usuario(nombre, email, password):
     supabase = get_supabase()
     email_clean = email.lower().strip()
     
-    # Asignar rol 'admin' automáticamente si el correo está en la lista VIP
-    plan_inicial = "admin" if email_clean in [e.lower() for e in ADMIN_EMAILS] else "free"
+    # Asignar rol 'admin' si el correo está en la lista VIP, de lo contrario 'free'
+    lista_vip = [e.lower().strip() for e in ADMIN_EMAILS]
+    plan_inicial = "admin" if email_clean in lista_vip else "free"
     
     # Encriptar contraseña
     salt = bcrypt.gensalt()
@@ -58,8 +59,9 @@ def verificar_login(email, password):
         if res.data and len(res.data) > 0:
             usuario = res.data[0]
             if bcrypt.checkpw(password.encode('utf-8'), usuario["password_hash"].encode('utf-8')):
-                # Garantizar plan 'admin' si el correo es VIP
-                plan_final = "admin" if email_clean in [e.lower() for e in ADMIN_EMAILS] else usuario["plan"]
+                # Garantizar plan 'admin' si el correo es VIP (incluso si fue creado antes)
+                lista_vip = [e.lower().strip() for e in ADMIN_EMAILS]
+                plan_final = "admin" if email_clean in lista_vip else usuario["plan"]
                 return True, {
                     "id": usuario["id"],
                     "nombre": usuario["nombre"],
