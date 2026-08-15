@@ -170,12 +170,13 @@ with st.sidebar:
 # =========================================================
 # PESTAÑAS PRINCIPALES DE LA APLICACIÓN
 # =========================================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📋 Analizador Clínico", 
     "🧪 Buscador de Pruebas", 
     "📄 Generador de Informes", 
     "🎙️ Analizador de Sesiones", 
-    "📚 Psicoeducación"
+    "📚 Psicoeducación",
+    "🧮 Corrector Psicométrico"
 ])
 
 # ---------------------------------------------------------
@@ -353,4 +354,33 @@ with tab5:
         else:
             with st.spinner("Elaborando material psicoeducativo..."):
                 res = engine.generar_plantilla_psicoeducacion(diag_base, destinatario, api_key)
+                st.markdown(res)
+
+# ---------------------------------------------------------
+# TAB 6: CORRECTOR DE PUNTAJES PSICOMÉTRICOS
+# ---------------------------------------------------------
+with tab6:
+    st.subheader("🧮 Corrector e Interpretador de Puntajes Psicométricos")
+    st.caption("Ingresa los puntajes obtenidos (Directos, Percentiles, Escalones o T) para generar una interpretación técnica automática.")
+    
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+        prueba_nom = st.text_input("Nombre de la Prueba:", placeholder="Ej: WISC-V, BDI-II, STAI, Figura Completa de Rey...")
+    with col_p2:
+        edad_p = st.number_input("Edad del evaluado:", min_value=1, max_value=100, value=edad_paciente)
+        
+    puntajes_input = st.text_area(
+        "Ingresa los puntajes o subescalas obtenidos:", 
+        height=120, 
+        placeholder="Ej:\n- Comprensión Verbal: Directo 35, Percentil 75\n- Visoperceptiva: Escalar 8\n- Memoria de Trabajo: Percentil 12 (Bajo)\n- Índice Total: CI 105"
+    )
+    
+    if st.button("📊 Interpretar y Clasificar Puntajes"):
+        if not api_key:
+            st.error("Por favor, ingresa tu API Key en la barra lateral.")
+        elif not prueba_nom.strip() or not puntajes_input.strip():
+            st.warning("Completa el nombre de la prueba y los puntajes.")
+        else:
+            with st.spinner("Procesando baremos e interpretando puntajes..."):
+                res = engine.interpretar_puntajes_psicometricos(prueba_nom, puntajes_input, edad_p, api_key)
                 st.markdown(res)
