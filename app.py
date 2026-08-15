@@ -14,6 +14,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inicializar estado de sesión para el texto dictado
+if "narrativa_texto" not in st.session_state:
+    st.session_state["narrativa_texto"] = ""
+
 # Cargar la imagen del logo en base64
 def get_image_base64(path):
     for posib in [path, "logo.JPG", "logo.jpeg", "logo.png", "LOGO.JPG"]:
@@ -25,11 +29,11 @@ def get_image_base64(path):
 logo_b64 = get_image_base64("logo.jpg")
 
 # =========================================================
-# ESTILOS CSS - PALETA CÁLIDA TIPO LOGO PATU (AMARILLO, CORAL, VERDE, CAFÉ)
+# ESTILOS CSS - PALETA CÁLIDA TIPO LOGO PATU
 # =========================================================
 st.markdown("""
     <style>
-    /* 1. FONDO GENERAL CÁLIDO (CREMA AMARILLENTO SUAVE DE PATU) */
+    /* 1. FONDO GENERAL CÁLIDO */
     .stApp {
         background-color: #FEFCE8 !important;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -37,17 +41,17 @@ st.markdown("""
     
     #MainMenu, footer, header {visibility: hidden;}
     
-    /* 2. TÍTULOS Y TEXTOS GENERALES CON COLORES PATU */
+    /* 2. TÍTULOS Y TEXTOS GENERALES */
     h1, h2, h3, .stSubheader {
-        color: #EA580C !important; /* Salmón / Coral Cálido */
+        color: #EA580C !important;
         font-weight: 800 !important;
     }
     
     p, label, span, div {
-        color: #78350F !important; /* Marrón/Café del Pato (Alta legibilidad) */
+        color: #78350F !important;
     }
 
-    /* 3. PESTAÑAS (TABS) CÁLIDAS Y VERDES */
+    /* 3. PESTAÑAS (TABS) */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background: #FEF3C7;
@@ -93,7 +97,7 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(255, 126, 122, 0.55) !important;
     }
 
-    /* 5. BARRA LATERAL (SIDEBAR) CÁLIDA */
+    /* 5. BARRA LATERAL (SIDEBAR) */
     section[data-testid="stSidebar"] {
         background: #FEF3C7 !important;
         border-right: 2px solid #FDE68A !important;
@@ -102,7 +106,7 @@ st.markdown("""
         color: #78350F !important;
     }
 
-    /* 6. CAJAS DE TEXTO (INPUTS) CON BORDES AMARILLOS/CORAL */
+    /* 6. CAJAS DE TEXTO (INPUTS) */
     .stTextInput input, .stTextArea textarea, .stSelectbox select, .stNumberInput input {
         border-radius: 12px !important;
         border: 2px solid #FDE68A !important;
@@ -117,7 +121,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================================================
-# BANNER PRINCIPAL CÁLIDO TIPO PATU
+# BANNER PRINCIPAL
 # =========================================================
 if logo_b64:
     logo_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="height: 85px; width: auto; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: white; padding: 4px; border: 2px solid #FDE68A;">'
@@ -180,7 +184,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: ANALIZADOR CLÍNICO INICIAL
+# TAB 1: ANALIZADOR CLÍNICO INICIAL (CON DICTADO POR VOZ)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
@@ -205,15 +209,43 @@ with tab1:
             index=opciones_etapa.index(etapa_default)
         )
 
-    narrativa = st.text_area("Narrativa o notas de la consulta inicial:", height=150, placeholder="Escribe o pega la narrativa clínica del paciente...")
+    st.markdown("#### 🎙️ Dictar o Escribir la Narrativa Clínica")
+    st.caption("Haz clic en el micrófono para hablarle a la app o escribe directamente en el recuadro de texto.")
     
+    # Grabador de Voz Directo
+    audio_dictado = st.audio_input("Presiona para dictar las notas de voz del caso:")
+    
+    if audio_dictado is not None:
+        if not api_key:
+            st.error("Por favor ingresa tu API Key en la barra lateral para usar el dictado por voz.")
+        else:
+            with st.spinner("Transcribiendo tu dictado por voz..."):
+                texto_dictado = engine.transcribir_audio_groq(audio_dictado, api_key)
+                if "Error" not in texto_dictado:
+                    # Acumular o reemplazar el texto
+                    if st.session_state["narrativa_texto"]:
+                        st.session_state["narrativa_texto"] += "\n" + texto_dictado
+                    else:
+                        st.session_state["narrativa_texto"] = texto_dictado
+                    st.success("¡Voz transcrita e integrada correctamente!")
+
+    # Carga el texto acumulado del dictado o lo que el usuario digite manualmente
+    narrativa = st.text_area(
+        "Narrativa o notas de la consulta inicial:", 
+        value=st.session_state["narrativa_texto"],
+        height=160, 
+        placeholder="Escribe o habla por el micrófono para capturar la narrativa clínica del paciente..."
+    )
+    # Actualizar la sesión si el usuario edita el texto manualmente
+    st.session_state["narrativa_texto"] = narrativa
+
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔍 Analizar Caso y Brechas"):
             if not api_key:
                 st.error("Por favor, ingresa tu API Key en la barra lateral.")
             elif not narrativa.strip():
-                st.warning("Ingresa una narrativa antes de analizar.")
+                st.warning("Ingresa o dicta una narrativa antes de analizar.")
             else:
                 with st.spinner("Procesando hipótesis clínicas..."):
                     res = engine.analizar_caso_inicial(narrativa, api_key)
@@ -224,7 +256,7 @@ with tab1:
             if not api_key:
                 st.error("Por favor, ingresa tu API Key en la barra lateral.")
             elif not narrativa.strip():
-                st.warning("Ingresa una narrativa antes de analizar.")
+                st.warning("Ingresa o dicta una narrativa antes de analizar.")
             else:
                 with st.spinner(f"Identificando pruebas válidas para {edad_paciente} años ({etapa_paciente})..."):
                     res = engine.obtener_pruebas_psicometricas(narrativa, edad_paciente, etapa_paciente, api_key)
