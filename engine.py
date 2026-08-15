@@ -276,3 +276,33 @@ def generar_plantilla_psicoeducacion(diag_base, destinatario, api_key):
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error al consultar la IA: {str(e)}"
+
+
+def interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, edad_paciente, api_key):
+    """
+    Interpreta puntajes directos, escalares, percentiles o puntuaciones T de pruebas psicológicas.
+    """
+    try:
+        client = groq.Groq(api_key=api_key)
+        prompt = f"""
+        Actúa como un psicometrista clínico senior experto en baremación y psicometría aplicada.
+        
+        DATOS DE LA EVALUACIÓN:
+        - Prueba Aplicada: {nombre_prueba}
+        - Edad del Paciente: {edad_paciente} años
+        - Puntajes Ingresados por el Clínico: 
+        "{puntajes_texto}"
+
+        Genera un informe psicométrico de corrección e interpretación que incluya:
+        1. **Clasificación y Rango Normativo:** Para cada puntaje/subescala (ej. Muy Alto, Superior, Promedio, Bajo, Clínicamente Significativo).
+        2. **Análisis Cualitativo e Interpretación:** Significado clínico de los hallazgos en relación con las funciones cognitivas, emocionales o conductuales evaluadas.
+        3. **Sugerencia de Síntesis para el Informe:** Un párrafo listo para copiar y pegar en la sección de "Resultados Psicométricos" de un informe clínico.
+        """
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al interpretar puntajes: {str(e)}"
