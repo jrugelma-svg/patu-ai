@@ -27,10 +27,16 @@ def analizar_caso_inicial(narrativa, api_key):
         return f"❌ Error al consultar la IA: {str(e)}"
 
 
-def obtener_pruebas_psicometricas(narrativa, edad, etapa, api_key):
+def obtener_pruebas_psicometricas(narrativa, edad=25, etapa="Adulto", api_key=""):
     """
     Genera sugerencias de pruebas psicométricas con filtro estricto por edad y etapa del desarrollo.
+    Soporta argumentos flexibles para evitar errores de tipo (TypeError).
     """
+    # Manejo de compatibilidad por si la API key se envía en lugar de edad o al final
+    if isinstance(edad, str) and len(edad) > 20 and not api_key:
+        api_key = edad
+        edad = 25
+
     try:
         client = groq.Groq(api_key=api_key)
         
