@@ -110,24 +110,46 @@ def generar_diagnostico_multiaxial(narrativa, datos_extra, api_key):
 
 def buscar_recursos_pruebas(query_prueba, api_key):
     """
-    Rastrea e identifica información y fichas técnicas sobre pruebas psicométricas.
+    Rastrea e identifica información, fichas técnicas y fuentes directas sobre pruebas psicométricas.
     """
     try:
         client = groq.Groq(api_key=api_key)
         prompt = f"""
-        Actúa como un bibliotecario y especialista en psicometría.
-        El usuario está buscando información, fichas técnicas o recursos sobre la siguiente prueba o tema:
+        Actúa como un bibliotecario especializado en psicometría clínica y recursos de evaluación.
+        El usuario requiere información técnica y fuentes para acceder a la siguiente prueba o recurso psicométrico:
         "{query_prueba}"
 
-        Proporciona un reporte detallado que incluya:
-        1. Ficha Técnica Completa (Nombre, autores, año, edad de aplicación, administración, duración).
-        2. Constructos y subescalas que evalúa.
-        3. Dónde o cómo encontrar legítimamente el material (editoriales oficiales como Tea Ediciones, Pearson, Paidós, u organizaciones dominio público).
+        INSTRUCCIONES DE BÚSQUEDA Y FORMATO:
+        Proporciona una respuesta clara, estructurada y sin rodeos. NUNCA respondas diciendo "no se encontraron enlaces directos" o "no puedo buscar en internet". En su lugar, entrega la información bibliográfica exacta y los portales donde se localiza el recurso.
+
+        ESTRUCTURA OBLIGATORIA DE RESPUESTA:
+
+        ### 🧪 Ficha Técnica: {query_prueba}
+        * **Nombre Completo:** (Nombre oficial y sigla)
+        * **Autor(es) y Año:** (Creadores y versión actual)
+        * **Rango de Edad:** (Edades exactas de aplicación)
+        * **Tiempo de Administración:** (Minutos estimados)
+        * **Áreas / Subescalas que evalúa:** (Listado de variables)
+
+        ### 📌 Dónde Encontrar el Material Oficial
+        Indica los distribuidores o editoriales oficiales autorizadas para la adquisición del juego completo (manual, cuadernillos y claves):
+        * **Editorial Oficial:** (Ej: Pearson Clinical, TEA Ediciones, El Manual Moderno, Paidós).
+        * **Enlace de Búsqueda Directa:** [Buscar en TEA Ediciones](https://www.web.teaediciones.com/Inicio.aspx) | [Buscar en Pearson Clinical](https://www.pearsonclinical.es/)
+
+        ### 📚 Fuentes Académicas y Documentos Consultables (PDF / Artículos)
+        Proporciona enlaces de búsqueda directa a repositorios científicos donde los psicólogos pueden consultar la validez, propiedades psicométricas o fichas técnicas de esta prueba:
+        * 🔗 [Buscar manuales/artículos en Redalyc](https://www.redalyc.org/busquedaArticuloFiltros.oa?q={query_prueba.replace(' ', '%20')})
+        * 🔗 [Buscar validaciones en Dialnet](https://dialnet.unirioja.es/buscar/documentos?query_s={query_prueba.replace(' ', '%20')})
+        * 🔗 [Buscar en Google Académico](https://scholar.google.com/scholar?q={query_prueba.replace(' ', '%20')}+propiedades+psicometricas)
+
+        ### 💡 Alternativas o Recurso de Uso Libre (Si aplica)
+        Si la prueba consultada es de catálogo cerrado/pago, sugiere una alternativa de dominio público o de acceso libre validada académicamente para evaluar el mismo constructo en la práctica clínica.
         """
+
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
+            temperature=0.2
         )
         return response.choices[0].message.content
     except Exception as e:
