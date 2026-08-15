@@ -1,107 +1,99 @@
-import sqlite3
+import os
+from supabase import create_client, Client
 import bcrypt
-from datetime import datetime
 
-DB_NAME = "patu_workstation.db"
+# Conexión a Supabase usando variables de entorno o Secrets
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
-def init_db():
-    """Inicializa la base de datos y crea las tablas si no existen."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    
-    # Tabla de Usuarios
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nombre TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            plan TEXT DEFAULT 'free',
-            fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Tabla de Historial / Registros de Pacientes y Análisis
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS historial_clinico (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario_id INTEGER NOT NULL,
-            tipo_registro TEXT NOT NULL,
-            titulo TEXT NOT NULL,
-            contenido TEXT NOT NULL,
-            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (usuario_id) REFERENCES usuarios (id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+def get_supabase() -> Client:
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# =========================================================
+# LISTA DE CORREOS VIP / DESARROLLADORES (ACCESO ILIMITADO)
+# Agrega o modifica aquí los 6 correos exactos de tu equipo:
+# =========================================================
+ADMIN_EMAILS = [
+    "admin@patu.ai",
+    "desarrollador1@patu.ai",
+    "desarrollador2@patu.ai",
+    "desarrollador3@patu.ai",
+    "desarrollador4@patu.ai",
+    "desarrollador5@patu.ai",
+]
 
 def registrar_usuario(nombre, email, password):
-    """Registra un nuevo usuario con contraseña encriptada."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    """Registra un nuevo usuario en Supabase."""
+    supabase = get_supabase()
+    email_clean = email.lower().strip()
     
+    # Asignar rol 'admin' automáticamente si el correo está en la lista VIP
+    plan_inicial = "admin" if email_clean in [e.lower() for e in ADMIN_EMAILS] else "free"
+    
+    # Encriptar contraseña
     salt = bcrypt.gensalt()
     password_hash = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
     
     try:
-        cursor.execute(
-            "INSERT INTO usuarios (nombre, email, password_hash, plan) VALUES (?, ?, ?, 'free')",
-            (nombre, email.lower().strip(), password_hash)
-        )
-        conn.commit()
-        conn.close()
+        data = {
+            "nombre": nombre,
+            "email": email_clean,
+            "password_hash": password_hash,
+            "plan": plan_inicial
+        }
+        res = supabase.table("usuarios").insert(data).execute()
         return True, "¡Cuenta creada exitosamente! Ya puedes iniciar sesión."
-    except sqlite3.IntegrityError:
-        conn.close()
-        return False, "El correo electrónico ya está registrado."
     except Exception as e:
-        conn.close()
+        if "duplicate" in str(e).lower() or "unique" in str(e).lower():
+            return False, "El correo electrónico ya está registrado."
         return False, f"Error al registrar: {str(e)}"
 
 def verificar_login(email, password):
-    """Verifica las credenciales del usuario."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
+    """Verifica las credenciales en Supabase."""
+    supabase = get_supabase()
+    email_clean = email.lower().strip()
     
-    cursor.execute("SELECT id, nombre, email, password_hash, plan FROM usuarios WHERE email = ?", (email.lower().strip(),))
-    usuario = cursor.fetchone()
-    conn.close()
-    
-    if usuario:
-        user_id, nombre, email_db, pass_hash, plan = usuario
-        if bcrypt.checkpw(password.encode('utf-8'), pass_hash.encode('utf-8')):
-            return True, {
-                "id": user_id,
-                "nombre": nombre,
-                "email": email_db,
-                "plan": plan
-            }
+    try:
+        res = supabase.table("usuarios").select("*").eq("email", email_clean).execute()
+        if res.data and len(res.data) > 0:
+            usuario = res.data[0]
+            if bcrypt.checkpw(password.encode('utf-8'), usuario["password_hash"].encode('utf-8')):
+                # Garantizar plan 'admin' si el correo es VIP
+                plan_final = "admin" if email_clean in [e.lower() for e in ADMIN_EMAILS] else usuario["plan"]
+                return True, {
+                    "id": usuario["id"],
+                    "nombre": usuario["nombre"],
+                    "email": usuario["email"],
+                    "plan": plan_final
+                }
+    except Exception as e:
+        print("Error en login:", e)
+        
     return False, "Correo o contraseña incorrectos."
 
 def guardar_historial(usuario_id, tipo_registro, titulo, contenido):
-    """Guarda una actividad o informe en el historial del usuario."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO historial_clinico (usuario_id, tipo_registro, titulo, contenido) VALUES (?, ?, ?, ?)",
-        (usuario_id, tipo_registro, titulo, contenido)
-    )
-    conn.commit()
-    conn.close()
+    """Guarda un registro en la base de datos remota de Supabase."""
+    supabase = get_supabase()
+    try:
+        data = {
+            "usuario_id": usuario_id,
+            "tipo_registro": tipo_registro,
+            "titulo": titulo,
+            "contenido": contenido
+        }
+        supabase.table("historial_clinico").insert(data).execute()
+    except Exception as e:
+        print("Error guardando historial:", e)
 
 def obtener_historial_usuario(usuario_id):
-    """Recupera todo el historial guardado del usuario logueado."""
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, tipo_registro, titulo, contenido, fecha FROM historial_clinico WHERE usuario_id = ? ORDER BY fecha DESC",
-        (usuario_id,)
-    )
-    registros = cursor.fetchall()
-    conn.close()
-    return registros
-
-# Inicializar DB al importar
-init_db()
+    """Obtiene el historial persistente desde Supabase."""
+    supabase = get_supabase()
+    try:
+        res = supabase.table("historial_clinico").select("*").eq("usuario_id", usuario_id).order("fecha", desc=True).execute()
+        registros = []
+        for r in res.data:
+            registros.append((r["id"], r["tipo_registro"], r["titulo"], r["contenido"], r["fecha"]))
+        return registros
+    except Exception as e:
+        print("Error obteniendo historial:", e)
+        return []
