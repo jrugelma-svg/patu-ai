@@ -103,13 +103,13 @@ st.markdown("""
     }
 
     /* 6. CAJAS DE TEXTO (INPUTS) CON BORDES AMARILLOS/CORAL */
-    .stTextInput input, .stTextArea textarea, .stSelectbox select {
+    .stTextInput input, .stTextArea textarea, .stSelectbox select, .stNumberInput input {
         border-radius: 12px !important;
         border: 2px solid #FDE68A !important;
         background-color: #FFFFFF !important;
         color: #78350F !important;
     }
-    .stTextInput input:focus, .stTextArea textarea:focus {
+    .stTextInput input:focus, .stTextArea textarea:focus, .stNumberInput input:focus {
         border-color: #FF7E7A !important;
         box-shadow: 0 0 0 3px rgba(255, 126, 122, 0.2) !important;
     }
@@ -179,10 +179,32 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: ANALIZADOR CLÍNICO INICIAL
+# TAB 1: ANALIZADOR CLÍNICO INICIAL CON FILTRO DE EDAD (PASO 1)
 # ---------------------------------------------------------
 with tab1:
     st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
+    
+    # --- FILTRO DE EDAD Y ETAPA DE DESARROLLO ---
+    col_edad1, col_edad2 = st.columns(2)
+    with col_edad1:
+        edad_paciente = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=110, value=25, step=1)
+    with col_edad2:
+        if edad_paciente < 12:
+            etapa_default = "Infantil (Niño/a)"
+        elif edad_paciente < 18:
+            etapa_default = "Adolescente"
+        elif edad_paciente < 65:
+            etapa_default = "Adulto"
+        else:
+            etapa_default = "Adulto Mayor"
+            
+        opciones_etapa = ["Infantil (Niño/a)", "Adolescente", "Adulto", "Adulto Mayor"]
+        etapa_paciente = st.selectbox(
+            "👶/👵 Etapa de Desarrollo:", 
+            opciones_etapa,
+            index=opciones_etapa.index(etapa_default)
+        )
+
     narrativa = st.text_area("Narrativa o notas de la consulta inicial:", height=150, placeholder="Escribe o pega la narrativa clínica del paciente...")
     
     col1, col2 = st.columns(2)
@@ -204,8 +226,8 @@ with tab1:
             elif not narrativa.strip():
                 st.warning("Ingresa una narrativa antes de analizar.")
             else:
-                with st.spinner("Identificando pruebas recomendadas..."):
-                    res = engine.obtener_pruebas_psicometricas(narrativa, api_key)
+                with st.spinner(f"Identificando pruebas válidas para {edad_paciente} años ({etapa_paciente})..."):
+                    res = engine.obtener_pruebas_psicometricas(narrativa, edad_paciente, etapa_paciente, api_key)
                     st.markdown(res)
                     
     st.divider()
