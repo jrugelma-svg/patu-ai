@@ -179,12 +179,11 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 ])
 
 # ---------------------------------------------------------
-# TAB 1: ANALIZADOR CLÍNICO INICIAL CON FILTRO DE EDAD (PASO 1)
+# TAB 1: ANALIZADOR CLÍNICO INICIAL
 # ---------------------------------------------------------
 with tab1:
     st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
     
-    # --- FILTRO DE EDAD Y ETAPA DE DESARROLLO ---
     col_edad1, col_edad2 = st.columns(2)
     with col_edad1:
         edad_paciente = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=110, value=25, step=1)
@@ -244,35 +243,44 @@ with tab1:
                 st.markdown(res)
 
 # ---------------------------------------------------------
-# TAB 2: BUSCADOR WEB REAL DE PRUEBAS
+# TAB 2: BUSCADOR WEB DE PRUEBAS
 # ---------------------------------------------------------
 with tab2:
-    st.subheader("🧪 Buscador Web Real de Pruebas y Recursos Psicométricos")
-    st.caption("Rastrea internet en tiempo real para obtener enlaces a fichas técnicas, manuales y documentos PDF.")
+    st.subheader("🧪 Buscador de Pruebas y Recursos Psicométricos")
+    st.caption("Rastrea información técnica sobre pruebas psicológicas.")
     
     query_prueba = st.text_input("Nombre de la prueba o área a evaluar:", placeholder="Ej: WISC-V, BDI-II, RAVEN, Ansiedad, STAI...")
-    if st.button("🔎 Buscar Recursos en la Web"):
+    if st.button("🔎 Buscar Recursos"):
         if not api_key:
             st.error("Por favor, ingresa tu API Key en la barra lateral.")
         elif not query_prueba.strip():
             st.warning("Escribe el nombre de una prueba o término de búsqueda.")
         else:
-            with st.spinner("Rastreando internet en tiempo real..."):
+            with st.spinner("Consultando información de la prueba..."):
                 res = engine.buscar_recursos_pruebas(query_prueba, api_key)
                 st.markdown(res)
 
 # ---------------------------------------------------------
-# TAB 3: GENERADOR DE INFORMES CON PLANTILLA PERSONALIZADA
+# TAB 3: GENERADOR DE INFORMES CON SUBIDA DE PLANTILLA WORD (.DOCX)
 # ---------------------------------------------------------
 with tab3:
-    st.subheader("📄 Generador de Informes Psicológicos")
-    st.caption("Carga tu propio modelo de informe o utiliza la estructura clínica estándar.")
+    st.subheader("📄 Generador de Informes con Plantilla Personalizada")
+    st.caption("Sube tu archivo de Word con la plantilla de tu consultorio y la IA redactará el informe adaptándose exactamente a tu modelo.")
     
-    # OPCIÓN DE PLANTILLA PERSONALIZADA
-    with st.expander("📋 (Opcional) Cargar o pegar tu propia Plantilla / Modelo de Informe"):
-        st.info("Si tienes un formato específico que usas en tu clínica o centro, pégalo aquí o sube un archivo de texto/Word para que la IA redacte adaptándose exacto a tu estructura.")
-        plantilla_texto = st.text_area("Modelo / Estructura de tu Informe:", height=130, placeholder="Ejemplo:\n1. DATOS GENERALES\n2. MOTIVO DE ATENCIÓN\n3. PRUEBAS Y RESULTADOS\n4. IMPRESIÓN DIAGNÓSTICA\n5. PLAN DE INTERVENCIÓN")
+    archivo_plantilla = st.file_uploader("📂 Subir Plantilla de Informe en Word (.docx):", type=["docx"])
     
+    plantilla_extraida = ""
+    if archivo_plantilla is not None:
+        plantilla_extraida = engine.extraer_texto_docx(archivo_plantilla)
+        if "Error" not in plantilla_extraida:
+            st.success(f"✅ Plantilla '{archivo_plantilla.name}' cargada correctamente con éxito.")
+            with st.expander("Ver estructura detectada de tu plantilla"):
+                st.text(plantilla_extraida)
+        else:
+            st.error(plantilla_extraida)
+
+    st.divider()
+
     col_a, col_b = st.columns(2)
     with col_a:
         nombre = st.text_input("Nombre / Iniciales:")
@@ -288,7 +296,7 @@ with tab3:
     observaciones = st.text_area("Observaciones Conductuales:", height=70)
     diagnostico = st.text_area("Conclusiones Diagnósticas:", height=70)
     
-    if st.button("📑 Redactar Informe Profesional"):
+    if st.button("📑 Redactar Informe en el Modelo Subido"):
         if not api_key:
             st.error("Por favor, ingresa tu API Key en la barra lateral.")
         else:
@@ -298,8 +306,8 @@ with tab3:
                 "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
                 "diagnostico": diagnostico
             }
-            with st.spinner("Adaptando datos a la estructura y redactando informe..."):
-                res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_texto, api_key)
+            with st.spinner("Procesando datos y volcando la información en tu plantilla Word..."):
+                res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_extraida, api_key)
                 st.markdown(res)
 
 # ---------------------------------------------------------
