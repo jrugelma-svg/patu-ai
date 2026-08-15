@@ -14,7 +14,7 @@ def get_supabase() -> Client:
 # Coloca aquí los 6 correos de tu equipo (incluso antes de que se registren).
 # ==============================================================================
 ADMIN_EMAILS = [
-    "jrugelma@ucvvirtual.edu.pe",  # Tu correo
+    "jrugelma@ucvvirtual.edu.pe",  # correo 1
     "asullonfe@ucvvirtual.edu.pe",   # Correo 2
     "djuarezro@ucvvirtual.edu.pe",   # Correo 3
     "maryeli25056@gmail.com",   # Correo 4
