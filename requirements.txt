@@ -1,5 +1,6 @@
 streamlit
 groq
 python-docx
-pillow
+Pillow
 bcrypt
+supabase
