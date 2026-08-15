@@ -1,5 +1,6 @@
 import groq
 import docx
+from io import BytesIO
 
 def extraer_texto_docx(archivo_docx):
     """
@@ -14,6 +15,32 @@ def extraer_texto_docx(archivo_docx):
         return "\n".join(texto_completo)
     except Exception as e:
         return f"Error al leer el archivo Word: {str(e)}"
+
+
+def crear_documento_word(titulo, contenido_texto):
+    """
+    Genera un archivo .docx en memoria a partir de un texto para su descarga directa.
+    """
+    doc = docx.Document()
+    
+    # Encabezado / Título
+    h = doc.add_heading(titulo, level=1)
+    
+    # Agregar párrafos
+    lineas = contenido_texto.split('\n')
+    for linea in lineas:
+        if linea.strip():
+            if linea.startswith('###') or linea.startswith('##'):
+                doc.add_heading(linea.replace('#', '').strip(), level=2)
+            elif linea.startswith('*') or linea.startswith('-'):
+                doc.add_paragraph(linea.replace('*', '').replace('-', '').strip(), style='List Bullet')
+            else:
+                doc.add_paragraph(linea.strip())
+                
+    bio = BytesIO()
+    doc.save(bio)
+    bio.seek(0)
+    return bio
 
 
 def analizar_caso_inicial(narrativa, api_key):
