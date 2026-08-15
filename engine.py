@@ -156,15 +156,34 @@ def buscar_recursos_pruebas(query_prueba, api_key):
         return f"❌ Error al consultar la IA: {str(e)}"
 
 
-def generar_informe_premium(datos_dict, enfoque, api_key):
+def generar_informe_premium(datos_dict, enfoque, plantilla_usuario="", api_key=""):
     """
-    Redacta un informe psicológico estructurado profesional.
+    Redacta un informe psicológico adaptándose a la plantilla/estructura provista por el usuario
+    o usando el formato estándar si no se adjunta plantilla.
     """
     try:
         client = groq.Groq(api_key=api_key)
+        
+        # Lógica si el usuario subió/pegó una plantilla propia
+        instruccion_plantilla = ""
+        if plantilla_usuario and plantilla_usuario.strip():
+            instruccion_plantilla = f"""
+            ESTRUCTURA Y PLANTILLA OBLIGATORIA DEL USUARIO:
+            El usuario ha proporcionado la siguiente plantilla/modelo de informe. Debes ajustar TODA la información del paciente a ESTE FORMATO EXACTO, respetando sus títulos, subtítulos, numeración y orden:
+            
+            --- INICIO DE PLANTILLA PERSONALIZADA ---
+            {plantilla_usuario}
+            --- FIN DE PLANTILLA PERSONALIZADA ---
+            """
+        else:
+            instruccion_plantilla = """
+            ESTRUCTURA ESTÁNDAR DE INFORME CLÍNICO:
+            Genera el informe formal con las secciones típicas: I. Datos de Filiación, II. Motivo de Consulta, III. Observaciones Conductuales, IV. Pruebas Aplicadas, V. Resultados e Interpretación, VI. Conclusiones Diagnósticas y VII. Recomendaciones.
+            """
+
         prompt = f"""
-        Eres un psicólogo clínico redactor de informes periciales y clínicos.
-        Redacta un informe psicológico completo con un enfoque {enfoque}.
+        Eres un psicólogo clínico experto en redacción de informes periciales y evaluación diagnóstica.
+        Redacta un informe psicológico completo y profesional utilizando un enfoque {enfoque}.
 
         DATOS DEL PACIENTE:
         - Nombre/Iniciales: {datos_dict.get('nombre')}
@@ -179,8 +198,13 @@ def generar_informe_premium(datos_dict, enfoque, api_key):
         - Observaciones conductuales: {datos_dict.get('observaciones')}
         - Conclusiones / Diagnóstico: {datos_dict.get('diagnostico')}
 
-        Genera el informe formal con las secciones típicas: I. Datos de Filiación, II. Motivo de Consulta, III. Observaciones, IV. Pruebas Aplicadas, V. Resultados e Interpretación, VI. Conclusiones Diagnósticas y VII. Recomendaciones.
+        {instruccion_plantilla}
+
+        REGLAS DE REDACCIÓN:
+        1. Mantén un lenguaje formal, técnico, objetivo y clínicamente riguroso.
+        2. Rellena fluidamente cada sección con los datos proporcionados.
         """
+
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
