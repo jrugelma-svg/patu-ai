@@ -73,7 +73,7 @@ st.markdown("""
     }
 
     /* 4. BOTONES CORAL / SALMÓN */
-    .stButton > button {
+    .stButton > button, .stDownloadButton > button {
         background: linear-gradient(135deg, #FF7E7A 0%, #E05652 100%) !important;
         color: #FFFFFF !important;
         border: none !important;
@@ -85,10 +85,10 @@ st.markdown("""
         transition: all 0.2s ease-in-out !important;
         width: 100%;
     }
-    .stButton > button * {
+    .stButton > button *, .stDownloadButton > button * {
         color: #FFFFFF !important;
     }
-    .stButton > button:hover {
+    .stButton > button:hover, .stDownloadButton > button:hover {
         transform: translateY(-2px) !important;
         box-shadow: 0 6px 20px rgba(255, 126, 122, 0.55) !important;
     }
@@ -262,11 +262,11 @@ with tab2:
                 st.markdown(res)
 
 # ---------------------------------------------------------
-# TAB 3: GENERADOR DE INFORMES CON SUBIDA DE PLANTILLA WORD (.DOCX)
+# TAB 3: GENERADOR DE INFORMES CON DESCARGA WORD (.DOCX)
 # ---------------------------------------------------------
 with tab3:
-    st.subheader("📄 Generador de Informes con Plantilla Personalizada")
-    st.caption("Sube tu archivo de Word con la plantilla de tu consultorio y la IA redactará el informe adaptándose exactamente a tu modelo.")
+    st.subheader("📄 Generador de Informes y Exportación a Word")
+    st.caption("Sube tu archivo de Word con la plantilla de tu consultorio o usa la estructura estándar.")
     
     archivo_plantilla = st.file_uploader("📂 Subir Plantilla de Informe en Word (.docx):", type=["docx"])
     
@@ -297,7 +297,7 @@ with tab3:
     observaciones = st.text_area("Observaciones Conductuales:", height=70)
     diagnostico = st.text_area("Conclusiones Diagnósticas:", height=70)
     
-    if st.button("📑 Redactar Informe en el Modelo Subido"):
+    if st.button("📑 Redactar Informe Clínico"):
         if not api_key:
             st.error("Por favor, ingresa tu API Key en la barra lateral.")
         else:
@@ -307,9 +307,18 @@ with tab3:
                 "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
                 "diagnostico": diagnostico
             }
-            with st.spinner("Procesando datos y volcando la información en tu plantilla Word..."):
+            with st.spinner("Procesando datos y redactando el informe..."):
                 res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_extraida, api_key)
                 st.markdown(res)
+                
+                # Botón de Descarga en Word
+                doc_bytes = engine.crear_documento_word(f"Informe Psicológico - {nombre or 'Paciente'}", res)
+                st.download_button(
+                    label="📥 Descargar Informe en Word (.docx)",
+                    data=doc_bytes,
+                    file_name=f"Informe_Psicologico_{nombre or 'Paciente'}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
 
 # ---------------------------------------------------------
 # TAB 4: TRANSCRIPCIÓN Y ANÁLISIS DE AUDIO
@@ -339,7 +348,7 @@ with tab4:
                     st.error(transcripcion)
 
 # ---------------------------------------------------------
-# TAB 5: GUÍAS PSICOEDUCATIVAS
+# TAB 5: GUÍAS PSICOEDUCATIVAS CON DESCARGA
 # ---------------------------------------------------------
 with tab5:
     st.subheader("📚 Generador de Material Psicoeducativo")
@@ -355,6 +364,15 @@ with tab5:
             with st.spinner("Elaborando material psicoeducativo..."):
                 res = engine.generar_plantilla_psicoeducacion(diag_base, destinatario, api_key)
                 st.markdown(res)
+                
+                # Botón de Descarga Word
+                doc_bytes = engine.crear_documento_word(f"Guía Psicoeducativa: {diag_base}", res)
+                st.download_button(
+                    label="📥 Descargar Guía en Word (.docx)",
+                    data=doc_bytes,
+                    file_name=f"Guia_Psicoeducativa_{destinatario}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
 
 # ---------------------------------------------------------
 # TAB 6: CORRECTOR DE PUNTAJES PSICOMÉTRICOS
@@ -384,3 +402,12 @@ with tab6:
             with st.spinner("Procesando baremos e interpretando puntajes..."):
                 res = engine.interpretar_puntajes_psicometricos(prueba_nom, puntajes_input, edad_p, api_key)
                 st.markdown(res)
+                
+                # Botón de Descarga Word
+                doc_bytes = engine.crear_documento_word(f"Interpretación Psicométrica - {prueba_nom}", res)
+                st.download_button(
+                    label="📥 Descargar Interpretación en Word (.docx)",
+                    data=doc_bytes,
+                    file_name=f"Resultado_{prueba_nom}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
