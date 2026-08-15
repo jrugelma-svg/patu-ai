@@ -1,253 +1,237 @@
-import io
-import os
-from groq import Groq
-from duckduckgo_search import DDGS
+import groq
 
-# =========================================================
-# 1. BÚSQUEDA WEB REAL DE PRUEBAS PSICOMÉTRICAS
-# =========================================================
-def buscar_recursos_pruebas(prueba_query, api_key):
+def analizar_caso_inicial(narrativa, api_key):
     """
-    Realiza una búsqueda en tiempo real usando DuckDuckGo para encontrar
-    enlaces directos, PDFs y fichas técnicas, y luego los sintetiza con Groq.
+    Analiza la narrativa clínica inicial identificando brechas de información e hipótesis diagnósticas.
     """
     try:
-        # 1. Búsqueda en vivo en todo internet mediante DuckDuckGo
-        resultados_raw = []
-        with DDGS() as ddgs:
-            query_busqueda = f"test psicometrico {prueba_query} manual PDF ficha tecnica"
-            results = ddgs.text(query_busqueda, max_results=6)
-            
-            if results:
-                for r in results:
-                    resultados_raw.append(f"- **[{r['title']}]({r['href']})**:\n  _{r['body']}_")
+        client = groq.Groq(api_key=api_key)
+        prompt = f"""
+        Eres un psicólogo clínico experto y supervisor de casos.
+        Analiza la siguiente narrativa clínica inicial y proporciona un reporte estructurado con:
+        1. Resumen Sintomático Principal
+        2. Brechas de Información o Datos Faltantes Críticos
+        3. Hipótesis Diagnósticas Preliminares (CIE-11 / DSM-5)
+        4. Recomendaciones Inmediatas para la Siguiente Consulta
 
-        if resultados_raw:
-            contexto_busqueda = "\n\n".join(resultados_raw)
-        else:
-            contexto_busqueda = "No se encontraron enlaces directos en la búsqueda en vivo en este momento."
+        NARRATIVA DEL CASO:
+        "{narrativa}"
+        """
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al consultar la IA: {str(e)}"
 
-        # 2. Sintetizar y dar formato con la API de Groq
-        client = Groq(api_key=api_key)
+
+def obtener_pruebas_psicometricas(narrativa, edad, etapa, api_key):
+    """
+    Genera sugerencias de pruebas psicométricas con filtro estricto por edad y etapa del desarrollo.
+    """
+    try:
+        client = groq.Groq(api_key=api_key)
         
         prompt = f"""
-Eres un asistente experto en psicometría. El usuario busca información sobre la prueba o test: '{prueba_query}'.
+        Eres un psicometrista clínico experto. Analiza el siguiente caso y recomienda una batería de pruebas psicométricas adecuada.
 
-A continuación tienes los resultados REALES extraídos de internet en tiempo real:
-{contexto_busqueda}
-
-Tu tarea es organizar la información y responder con la siguiente estructura en Markdown:
-
-### 🧪 Ficha Técnica y Enlaces de Consulta: {prueba_query.upper()}
-
-1. **Ficha Técnica Rápida:**
-   - **Nombre Oficial / Acrónimo:** (Basado en tu conocimiento clínico sobre la prueba)
-   - **Objetivo principal:** (Qué evalúa)
-   - **Población / Edad de aplicación:** 
-
-2. **🔗 Enlaces y Fuentes Reales Encontradas en la Web:**
-   Presenta CADA UNO de los enlaces extraídos arriba formateados limpiamente como hipervínculos funcionales `[Título del sitio](URL)`, añadiendo una breve síntesis de 1 línea sobre el contenido del enlace (ej. documento PDF, artículo académico, ficha técnica, etc.).
-"""
-
-        response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="llama-3.3-70b-versatile",
-            temperature=0.3
-        )
+        DATOS CRÍTICOS DEL PACIENTE:
+        - EDAD EXACTA: {edad} años.
+        - ETAPA DEL DESARROLLO: {etapa}.
         
-        return response.choices[0].message.content
+        CASO CLÍNICO:
+        "{narrativa}"
 
-    except Exception as e:
-        return f"⚠️ No se pudo realizar la búsqueda web en este momento: {str(e)}"
+        REGLA DE ORO RESTRICTIVA DE EDAD (ESTRICTAMENTE OBLIGATORIA):
+        1. SOLO debes sugerir pruebas cuya baremación, rango normativo y ficha técnica corresponda EXACTAMENTE a los {edad} años del paciente ({etapa}).
+        2. Queda TOTALMENTE PROHIBIDO sugerir pruebas creadas para adultos a niños/adolescentes (por ejemplo, NO sugerir WAIS, BDI-II estándar, MMPI-2 a niños o adolescentes tempranos; usar WISC-V, BDI-Y, MACI, M-CHAT, BASC-3, SENA, etc., según corresponda).
+        3. Queda TOTALMENTE PROHIBIDO sugerir pruebas infantiles a adultos.
 
+        ESTRUCTURA DE TU RESPUESTA:
+        ### 🧪 Batería Psicométrica Recomendada (Rango: {edad} años / {etapa})
+        
+        Para cada prueba recomendada, incluye:
+        * **Nombre exacto de la prueba y versión válida para la edad:** (Ej: WISC-V, SENA, BASC-3, CAS-2, WAIS-IV).
+        * **Rango normativo oficial:** Confirma el rango de edad de aplicación según la ficha técnica.
+        * **Área evaluada:** (Ej: Coeficiente Intelectual, Ansiedad, Funciones Ejecutivas, Personalidad).
+        * **Justificación clínica:** Por qué es adecuada para la problemática redactada y la edad específica de este paciente.
+        """
 
-# =========================================================
-# 2. ANÁLISIS CLÍNICO INICIAL Y MULTIAXIAL
-# =========================================================
-def analizar_caso_inicial(narrativa_caso, api_key):
-    """Analiza la narrativa del caso, hallando semejanzas y brechas de información."""
-    try:
-        client = Groq(api_key=api_key)
-        prompt = f"""
-Eres un asistente clínico avanzado. Revisa la siguiente narrativa de un paciente (puede incluir lenguaje coloquial):
-"{narrativa_caso}"
-
-Realiza lo siguiente:
-1. **Semejanzas Diagnósticas:** Identifica posibles cuadros clínicos o hipótesis diagnósticas preliminares según DSM-5/CIE-11.
-2. **Brechas de Información / Faltantes:** Indica qué datos clave faltan por indagar en la entrevista (antecedentes, tiempo de evolución, estresores, etc.).
-
-Formatea la respuesta en Markdown con encabezados claros y viñetas.
-"""
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
 
 
-def obtener_pruebas_psicometricas(narrativa_caso, api_key):
-    """Recomienda baterías y pruebas psicométricas según la narrativa."""
+def generar_diagnostico_multiaxial(narrativa, datos_extra, api_key):
+    """
+    Formula una evaluación multiaxial completa basada en la narrativa y datos contextuales.
+    """
     try:
-        client = Groq(api_key=api_key)
+        client = groq.Groq(api_key=api_key)
         prompt = f"""
-Basándote en la siguiente información clínica:
-"{narrativa_caso}"
+        Eres un psiquiatra y psicólogo clínico experto.
+        Genera una formulación diagnóstica estructurada considerando el modelo multiaxial/integral.
 
-Recomienda de 3 a 5 instrumentos o pruebas psicométricas/proyectivas pertinentes para evaluar el caso. 
-Por cada prueba incluye:
-- Nombre completo y acrónimo.
-- Qué evalúa específicamente.
-- Justificación clínica de su elección.
-"""
+        NARRATIVA PRINCIPAL:
+        "{narrativa}"
+
+        DATOS CONTEXTUALES ADICIONALES:
+        "{datos_extra}"
+
+        Por favor, estructura el reporte indicando:
+        - Eje / Dimensión 1: Trastornos Clínicos Principales
+        - Eje / Dimensión 2: Aspectos de Personalidad / Desarrollo
+        - Eje / Dimensión 3: Condiciones Médicas Relevantes
+        - Eje / Dimensión 4: Problemas Psicosociales y Ambientales
+        - Eje / Dimensión 5: Evaluación del Funcionamiento Global (EEAG/WHODAS)
+        """
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
 
 
-def generar_diagnostico_multiaxial(narrativa_caso, datos_extra, api_key):
-    """Genera una evaluación diagnóstica integrando contexto y multiaxialidad."""
+def buscar_recursos_pruebas(query_prueba, api_key):
+    """
+    Rastrea e identifica información y fichas técnicas sobre pruebas psicométricas.
+    """
     try:
-        client = Groq(api_key=api_key)
+        client = groq.Groq(api_key=api_key)
         prompt = f"""
-Integra la siguiente información para formular una evaluación diagnóstica multiaxial estructurada:
+        Actúa como un bibliotecario y especialista en psicometría.
+        El usuario está buscando información, fichas técnicas o recursos sobre la siguiente prueba o tema:
+        "{query_prueba}"
 
-**Narrativa Principal:** "{narrativa_caso}"
-**Datos Contextuales Adicionales:** "{datos_extra}"
-
-Estructura el resultado en Markdown abarcando:
-- **Eje I / Cuadro Principal:** Trastornos clínicos.
-- **Eje II:** Aspectos de personalidad o del desarrollo.
-- **Eje III:** Condiciones médicas pertinentes.
-- **Eje IV:** Problemas psicosociales y ambientales.
-- **Eje V / EEAG:** Evaluación de la actividad global estimada.
-- **Impresión Síntesis / Recomendaciones Terapéuticas.**
-"""
+        Proporciona un reporte detallado que incluya:
+        1. Ficha Técnica Completa (Nombre, autores, año, edad de aplicación, administración, duración).
+        2. Constructos y subescalas que evalúa.
+        3. Dónde o cómo encontrar legítimamente el material (editoriales oficiales como Tea Ediciones, Pearson, Paidós, u organizaciones dominio público).
+        """
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
 
 
-# =========================================================
-# 3. MÓDULO PREMIUM: GENERADOR DE INFORMES
-# =========================================================
 def generar_informe_premium(datos_dict, enfoque, api_key):
-    """Genera la redacción integral de un informe psicológico formal."""
+    """
+    Redacta un informe psicológico estructurado profesional.
+    """
     try:
-        client = Groq(api_key=api_key)
+        client = groq.Groq(api_key=api_key)
         prompt = f"""
-Redacta un informe psicológico profesional y formal con un enfoque **{enfoque}**.
+        Eres un psicólogo clínico redactor de informes periciales y clínicos.
+        Redacta un informe psicológico completo con un enfoque {enfoque}.
 
-**Datos de Filiación:**
-- Nombre/Iniciales: {datos_dict.get('nombre')}
-- Edad: {datos_dict.get('edad')}
-- Género/Sexo: {datos_dict.get('genero')}
-- Ocupación: {datos_dict.get('ocupacion')}
+        DATOS DEL PACIENTE:
+        - Nombre/Iniciales: {datos_dict.get('nombre')}
+        - Edad: {datos_dict.get('edad')}
+        - Género: {datos_dict.get('genero')}
+        - Ocupación: {datos_dict.get('ocupacion')}
 
-**Contenido del Caso:**
-- Motivo de Consulta: {datos_dict.get('motivo')}
-- Problema Actual / Antecedentes: {datos_dict.get('problema_actual')}
-- Pruebas / Instrumentos Aplicados: {datos_dict.get('pruebas_aplicadas')}
-- Observaciones Conductuales: {datos_dict.get('observaciones')}
-- Impresión Diagnóstica / Conclusiones: {datos_dict.get('diagnostico')}
+        CONTENIDO CLÍNICO:
+        - Motivo de consulta: {datos_dict.get('motivo')}
+        - Problema actual / Antecedentes: {datos_dict.get('problema_actual')}
+        - Pruebas aplicadas: {datos_dict.get('pruebas_aplicadas')}
+        - Observaciones conductuales: {datos_dict.get('observaciones')}
+        - Conclusiones / Diagnóstico: {datos_dict.get('diagnostico')}
 
-Organiza el informe en Markdown técnico y formal con las secciones tradicionales (I. Datos de Filiación, II. Motivo de Consulta, III. Observaciones Conductuales, IV. Pruebas Aplicadas, V. Resultados e Interpretación, VI. Conclusiones Diagnósticas y VII. Recomendaciones).
-"""
+        Genera el informe formal con las secciones típicas: I. Datos de Filiación, II. Motivo de Consulta, III. Observaciones, IV. Pruebas Aplicadas, V. Resultados e Interpretación, VI. Conclusiones Diagnósticas y VII. Recomendaciones.
+        """
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
 
 
-# =========================================================
-# 4. TRANSCRIPCIÓN DE AUDIO Y ANÁLISIS DE SESIÓN
-# =========================================================
 def transcribir_audio_groq(archivo_audio, api_key):
-    """Transcribe un archivo de audio usando el modelo Whisper en Groq."""
+    """
+    Transcribe un archivo de audio mediante la API de Whisper en Groq.
+    """
     try:
-        client = Groq(api_key=api_key)
-        
-        # Obtener extensión y bytes del archivo
-        nombre_archivo = getattr(archivo_audio, "name", "audio.mp3")
-        bytes_audio = archivo_audio.read()
-        
+        client = groq.Groq(api_key=api_key)
         transcription = client.audio.transcriptions.create(
-            file=(nombre_archivo, bytes_audio),
+            file=(archivo_audio.name, archivo_audio.read()),
             model="whisper-large-v3",
-            response_format="text"
+            response_format="text",
+            language="es"
         )
         return transcription
     except Exception as e:
-        return f"⚠️ Error al transcribir el audio: {str(e)}"
+        return f"Error en la transcripción: {str(e)}"
 
 
-def analizar_transcripcion_sesion(transcripcion_texto, api_key):
-    """Analiza el diálogo de una sesión transcrita buscando afecto, riesgos y temas clave."""
+def analizar_transcripcion_sesion(transcripcion, api_key):
+    """
+    Analiza clínicamente la transcripción de una sesión de terapia.
+    """
     try:
-        client = Groq(api_key=api_key)
+        client = groq.Groq(api_key=api_key)
         prompt = f"""
-Analiza la siguiente transcripción/registro verbal de una sesión terapéutica:
+        Eres un supervisor clínico. Analiza la siguiente transcripción de una sesión psicológica:
 
-"{transcripcion_texto}"
+        TRANSCRIPCIÓN:
+        "{transcripcion}"
 
-Extrae en formato Markdown:
-1. **Puntos Clave y Temáticas Recurrentes:**
-2. **Estado Afectivo y Tono Emocional Predominante:**
-3. **Alertas de Riesgo o Indicadores Críticos (si existen):**
-4. **Resumen Síntesis para la Historia Clínica:**
-"""
+        Proporciona:
+        1. Temas clave abordados.
+        2. Estado afectivo y patrones de pensamiento detectados en el paciente.
+        3. Intervenciones principales del terapeuta y su efectividad.
+        4. Tareas o aspectos a dar seguimiento en la próxima sesión.
+        """
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
 
 
-# =========================================================
-# 5. GENERADOR DE GUÍA PSICOEDUCATIVA
-# =========================================================
-def generar_plantilla_psicoeducacion(diagnostico_texto, destinatario, api_key):
-    """Convierte lenguaje técnico en una guía psicoeducativa empática."""
+def generar_plantilla_psicoeducacion(diag_base, destinatario, api_key):
+    """
+    Genera una guía o folleto psicoeducativo según el diagnóstico y el destinatario.
+    """
     try:
-        client = Groq(api_key=api_key)
+        client = groq.Groq(api_key=api_key)
         prompt = f"""
-Crea una guía psicoeducativa accesible, empática y fácil de entender dirigida a: **{destinatario}**.
+        Crea un documento psicoeducativo claro, empático y profesional sobre el siguiente tema/diagnóstico:
+        "{diag_base}"
 
-**Diagnóstico o Cuadro Clínico Base:**
-"{diagnostico_texto}"
+        DESTINATARIO: {destinatario}
 
-La guía debe contener:
-1. **¿Qué es esto que está pasando?** (Explicación clara usando metáforas o analogías, sin tecnicismos complejos).
-2. **Síntomas Habituales:** (Explicar por qué siente/experimenta esto).
-3. **Pautas de Afrontamiento / Cómo Ayudar en el Día a Día:** (Estrategias concretas).
-4. **Mensaje de Cierre y Esperanza:**
-
-Usa un tono cálido, comprensivo y estructurado en Markdown.
-"""
+        Estructura el material con:
+        - ¿Qué es y qué no es esta condición? (Explicado de forma accesible)
+        - Síntomas comunes expuestos amigablemente
+        - Estrategias de afrontamiento o manejo práctico diario
+        - Mitos comunes vs. Realidades
+        - Palabras de apoyo / Cierre empático
+        """
         response = client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
             model="llama-3.3-70b-versatile",
-            temperature=0.5
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"⚠️ Error en API de Groq: {str(e)}"
+        return f"❌ Error al consultar la IA: {str(e)}"
