@@ -262,10 +262,17 @@ with tab2:
                 st.markdown(res)
 
 # ---------------------------------------------------------
-# TAB 3: GENERADOR DE INFORMES
+# TAB 3: GENERADOR DE INFORMES CON PLANTILLA PERSONALIZADA
 # ---------------------------------------------------------
 with tab3:
     st.subheader("📄 Generador de Informes Psicológicos")
+    st.caption("Carga tu propio modelo de informe o utiliza la estructura clínica estándar.")
+    
+    # OPCIÓN DE PLANTILLA PERSONALIZADA
+    with st.expander("📋 (Opcional) Cargar o pegar tu propia Plantilla / Modelo de Informe"):
+        st.info("Si tienes un formato específico que usas en tu clínica o centro, pégalo aquí o sube un archivo de texto/Word para que la IA redacte adaptándose exacto a tu estructura.")
+        plantilla_texto = st.text_area("Modelo / Estructura de tu Informe:", height=130, placeholder="Ejemplo:\n1. DATOS GENERALES\n2. MOTIVO DE ATENCIÓN\n3. PRUEBAS Y RESULTADOS\n4. IMPRESIÓN DIAGNÓSTICA\n5. PLAN DE INTERVENCIÓN")
+    
     col_a, col_b = st.columns(2)
     with col_a:
         nombre = st.text_input("Nombre / Iniciales:")
@@ -291,8 +298,8 @@ with tab3:
                 "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones,
                 "diagnostico": diagnostico
             }
-            with st.spinner("Redactando informe profesional..."):
-                res = engine.generar_informe_premium(datos_dict, enfoque, api_key)
+            with st.spinner("Adaptando datos a la estructura y redactando informe..."):
+                res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_texto, api_key)
                 st.markdown(res)
 
 # ---------------------------------------------------------
