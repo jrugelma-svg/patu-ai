@@ -45,7 +45,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ESTADOS DE SESIÓN (PERSISTENCIA)
+# ==========================================
+# ESTADOS DE SESIÓN (PERSISTENCIA Y CONTROL DE CASO)
+# ==========================================
 if "user" not in st.session_state:
     st.session_state.user = None
 
@@ -55,6 +57,11 @@ if "texto_narrativa" not in st.session_state:
 if "historial_consultas" not in st.session_state:
     st.session_state.historial_consultas = []
 
+# Control de Cobro por Caso Completo
+if "caso_activo" not in st.session_state:
+    st.session_state.caso_activo = False
+
+# Resultados Persistentes
 if "res_analizador_clinico" not in st.session_state:
     st.session_state.res_analizador_clinico = None
 if "res_buscador_pruebas" not in st.session_state:
@@ -97,7 +104,22 @@ def guardar_en_historial(modulo, entrada, resultado):
         "resultado": resultado
     })
 
+def limpiar_caso_actual():
+    """Resetea el caso actual para permitir ingresar un nuevo paciente."""
+    st.session_state.caso_activo = False
+    st.session_state.res_analizador_clinico = None
+    st.session_state.res_buscador_pruebas = None
+    st.session_state.res_generador_informes = None
+    st.session_state.res_analizador_sesiones = None
+    st.session_state.res_psicoeducacion = None
+    st.session_state.res_corrector_psicometrico = None
+    st.session_state.doc_informe_descargable = None
+    st.session_state.doc_psico_descargable = None
+    st.session_state.texto_narrativa = ""
+
+# ==========================================
 # LOGIN Y REGISTRO
+# ==========================================
 if not st.session_state.user:
     col_logo, col_header = st.columns([1, 4])
     with col_logo:
@@ -141,7 +163,9 @@ if not st.session_state.user:
             else:
                 st.warning("Por favor completa todos los campos.")
 
+# ==========================================
 # PANEL PRINCIPAL LOGUEADO
+# ==========================================
 else:
     api_key_env = os.getenv("GROQ_API_KEY")
     user = obtener_usuario_por_id(st.session_state.user["id"])
@@ -152,7 +176,7 @@ else:
     limite_gratis = 4
     consultas_usadas = user.get("consultas_usadas", 0)
     es_premium = user.get("es_premium", False)
-    puede_consultar = es_premium or (consultas_usadas < limite_gratis)
+    puede_consultar = es_premium or (consultas_usadas < limite_gratis) or st.session_state.caso_activo
 
     # CABECERA
     col_a, col_b = st.columns([1, 4])
@@ -170,9 +194,15 @@ else:
         else:
             st.markdown("**Plan Actual:** 🌱 `PLAN FREE`")
             st.markdown("---")
-            st.write(f"📊 **Uso del Plan:** {consultas_usadas}/{limite_gratis}")
+            st.write(f"📊 **Casos Utilizados:** {consultas_usadas}/{limite_gratis}")
             restantes = max(0, limite_gratis - consultas_usadas)
-            st.markdown(f'<div class="caja-pruebas">Te quedan {restantes} créditos disponibles.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="caja-pruebas">Te quedan {restantes} casos/créditos disponibles.</div>', unsafe_allow_html=True)
+
+        if st.session_state.caso_activo:
+            st.success("🟢 Caso Clínico Activo (Herramientas desbloqueadas)")
+            if st.button("🔄 Iniciar Nuevo Caso / Paciente"):
+                limpiar_caso_actual()
+                st.rerun()
 
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión"):
@@ -180,67 +210,70 @@ else:
                 del st.session_state[key]
             st.rerun()
 
-    if not puede_consultar:
+    # Si se agotaron los créditos y no hay un caso activo, se muestra la alerta pero NO se bloquean las pestañas para ver resultados
+    if not puede_consultar and not st.session_state.res_analizador_clinico:
         st.warning(f"⚠️ Has agotado tus créditos disponibles.")
-        st.info("Recarga 10 créditos adicionales por solo S/. 2.00 para continuar realizando consultas.")
+        st.info("Recarga 10 créditos adicionales por solo S/. 2.00 para continuar analizando nuevos casos.")
         link_pago, msg_pago = crear_preferencia_pago(user["id"], user["email"])
         if link_pago:
             st.link_button("🚀 Recargar +10 Créditos con Mercado Pago (S/. 2.00)", link_pago)
-        else:
-            st.error(f"Error al generar enlace de pago: {msg_pago}")
 
-    else:
-        tabs = st.tabs([
-            "📋 Analizador Clínico", 
-            "🧪 Buscador de Pruebas", 
-            "📄 Generador de Informes", 
-            "🎙️ Analizador de Sesiones", 
-            "📚 Psicoeducación", 
-            "📝 Corrector Psicométrico", 
-            "📂 Mi Historial"
-        ])
+    tabs = st.tabs([
+        "📋 Analizador Clínico", 
+        "🧪 Buscador de Pruebas", 
+        "📄 Generador de Informes", 
+        "🎙️ Analizador de Sesiones", 
+        "📚 Psicoeducación", 
+        "📝 Corrector Psicométrico", 
+        "📂 Mi Historial"
+    ])
 
-        # 1. ANALIZADOR CLÍNICO
-        with tabs[0]:
-            st.subheader("📋 Análisis Diagnóstico Inicial, Brechas e Hipótesis (DSM-5 / CIE-11)")
-            col1, col2 = st.columns(2)
-            with col1:
-                edad = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=120, value=25, key="ac_edad")
-            with col2:
-                etapa = st.selectbox("👶 / 🧑 Etapa de Desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
+    # ==========================================
+    # 1. ANALIZADOR CLÍNICO
+    # ==========================================
+    with tabs[0]:
+        st.subheader("📋 Análisis Diagnóstico Inicial, Brechas, Hipótesis y Diagnósticos Diferenciales")
+        col1, col2 = st.columns(2)
+        with col1:
+            edad = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=120, value=25, key="ac_edad")
+        with col2:
+            etapa = st.selectbox("👶 / 🧑 Etapa de Desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
 
-            st.write("---")
-            st.write("📷 **1. Cargar Imágenes o Documentos del Motivo de Consulta:**")
-            archivo = st.file_uploader(
-                "Sube fotos de fichas, capturas, imágenes o PDFs:",
-                type=["pdf", "docx", "txt", "png", "jpg", "jpeg"],
-                key="uploader_ac"
-            )
+        st.write("---")
+        st.write("📷 **1. Cargar Imágenes o Documentos del Motivo de Consulta:**")
+        archivo = st.file_uploader(
+            "Sube fotos de fichas, capturas, imágenes o PDFs:",
+            type=["pdf", "docx", "txt", "png", "jpg", "jpeg"],
+            key="uploader_ac"
+        )
 
-            st.write("🎙️ **2. Dictar Motivo de Consulta por Voz:**")
-            audio_input = st.audio_input("Grabar notas de voz:", key="audio_voice_ac")
+        st.write("🎙️ **2. Dictar Motivo de Consulta por Voz:**")
+        audio_input = st.audio_input("Grabar notas de voz:", key="audio_voice_ac")
 
-            if audio_input is not None:
-                audio_bytes = audio_input.getvalue()
-                if st.session_state.get("last_audio_bytes_ac") != audio_bytes:
-                    with st.spinner("🎙️ Transcribiendo nota de voz a texto..."):
-                        transcripcion = transcribir_audio_groq(audio_input, api_key_env)
-                        if transcripcion and not str(transcripcion).startswith("Error"):
-                            st.session_state.texto_narrativa = str(transcripcion).strip()
-                            st.session_state["last_audio_bytes_ac"] = audio_bytes
-                            st.success("✅ ¡Voz transcrita exitosamente en el cuadro de texto!")
-                        else:
-                            st.error(f"Error al transcribir: {transcripcion}")
+        if audio_input is not None:
+            audio_bytes = audio_input.getvalue()
+            if st.session_state.get("last_audio_bytes_ac") != audio_bytes:
+                with st.spinner("🎙️ Transcribiendo nota de voz a texto..."):
+                    transcripcion = transcribir_audio_groq(audio_input, api_key_env)
+                    if transcripcion and not str(transcripcion).startswith("Error"):
+                        st.session_state.texto_narrativa = str(transcripcion).strip()
+                        st.session_state["last_audio_bytes_ac"] = audio_bytes
+                        st.success("✅ ¡Voz transcrita exitosamente en el cuadro de texto!")
+                    else:
+                        st.error(f"Error al transcribir: {transcripcion}")
 
-            instrucciones = st.text_area(
-                "✍️ **3. Narrativa o Transcripción del Motivo de Consulta:**",
-                value=st.session_state.texto_narrativa,
-                placeholder="Pega o edita la narrativa aquí...",
-                key="txt_ac"
-            )
-            st.session_state.texto_narrativa = instrucciones
+        instrucciones = st.text_area(
+            "✍️ **3. Narrativa o Transcripción del Motivo de Consulta:**",
+            value=st.session_state.texto_narrativa,
+            placeholder="Pega o edita la narrativa aquí...",
+            key="txt_ac"
+        )
+        st.session_state.texto_narrativa = instrucciones
 
-            if st.button("Procesar Análisis Clínico Completo", key="btn_ac"):
+        if st.button("Procesar Análisis Clínico Completo", key="btn_ac"):
+            if not puede_consultar:
+                st.error("❌ Has agotado tus créditos disponibles. Por favor recarga para iniciar un nuevo caso.")
+            else:
                 texto_a_procesar = instrucciones.strip()
                 if not texto_a_procesar and audio_input is not None:
                     transcripcion = transcribir_audio_groq(audio_input, api_key_env)
@@ -248,7 +281,7 @@ else:
                         texto_a_procesar = str(transcripcion).strip()
 
                 if archivo or texto_a_procesar:
-                    with st.spinner("Generando diagnóstico multiaxial, brechas, códigos y batería de pruebas..."):
+                    with st.spinner("Generando diagnóstico multiaxial, brechas, diferenciales y batería de pruebas..."):
                         narrativa_final = f"Paciente de {edad} años ({etapa}). Motivo: {texto_a_procesar}"
                         
                         if archivo:
@@ -260,136 +293,144 @@ else:
                             st.session_state.res_analizador_clinico = res
                             guardar_en_historial("Analizador Clínico", narrativa_final, res)
                             
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
+                            # Si es la primera vez del caso, se descuenta el crédito único
+                            if not st.session_state.caso_activo:
+                                st.session_state.caso_activo = True
+                                if not es_premium:
+                                    nuevas = incrementar_consultas(user["id"])
+                                    if nuevas is not None:
+                                        st.session_state.user["consultas_usadas"] = nuevas
+                            st.rerun()
                         else:
                             st.error(res)
                             st.session_state.res_analizador_clinico = None
                 else:
                     st.warning("Por favor ingresa una narrativa, graba audio o sube un documento/imagen.")
 
-            # MUESTRA PERSISTENTE DEL RESULTADO
-            if st.session_state.res_analizador_clinico:
-                st.markdown("---")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_analizador_clinico)
-                st.markdown('</div>', unsafe_allow_html=True)
+        # RESULTADO PERSISTENTE (Se dibuja siempre)
+        if st.session_state.res_analizador_clinico:
+            st.markdown("---")
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_analizador_clinico)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # 2. BUSCADOR DE PRUEBAS
-        with tabs[1]:
-            st.subheader("🧪 Buscador de Batería Psicométrica Estandarizada")
-            c1, c2 = st.columns(2)
-            with c1:
-                edad_bp = st.number_input("Edad exacta del paciente:", min_value=1, max_value=120, value=25, key="bp_edad")
-            with c2:
-                etapa_bp = st.selectbox("Etapa de desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="bp_etapa")
-            
-            caso_bp = st.text_area("Motivo de consulta o síntomas a evaluar:", placeholder="Ej: Sintomatología depresiva, inatención, ansiedad social...", key="bp_caso")
+    # ==========================================
+    # 2. BUSCADOR DE PRUEBAS
+    # ==========================================
+    with tabs[1]:
+        st.subheader("🧪 Buscador de Batería Psicométrica Estandarizada")
+        c1, c2 = st.columns(2)
+        with c1:
+            edad_bp = st.number_input("Edad exacta del paciente:", min_value=1, max_value=120, value=25, key="bp_edad")
+        with c2:
+            etapa_bp = st.selectbox("Etapa de desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="bp_etapa")
+        
+        caso_bp = st.text_area("Motivo de consulta o síntomas a evaluar:", placeholder="Ej: Sintomatología depresiva, inatención, ansiedad social...", key="bp_caso")
 
-            if st.button("Buscar Pruebas Adecuadas", key="btn_bp"):
-                if caso_bp.strip():
-                    with st.spinner("Filtrando pruebas psicométricas normadas por edad..."):
-                        res = obtener_pruebas_psicometricas(caso_bp, edad_bp, etapa_bp, api_key_env)
-                        if res and not res.startswith("❌"):
-                            st.session_state.res_buscador_pruebas = res
-                            guardar_en_historial("Buscador de Pruebas", f"Edad: {edad_bp}, Caso: {caso_bp}", res)
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
-                        else:
-                            st.error(res)
-                            st.session_state.res_buscador_pruebas = None
-                else:
-                    st.warning("Ingresa los síntomas o el motivo para recomendar la batería.")
+        if st.button("Buscar Pruebas Adecuadas", key="btn_bp"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Has agotado tus créditos. Recarga para continuar.")
+            elif caso_bp.strip():
+                with st.spinner("Filtrando pruebas psicométricas normadas por edad..."):
+                    res = obtener_pruebas_psicometricas(caso_bp, edad_bp, etapa_bp, api_key_env)
+                    if res and not res.startswith("❌"):
+                        st.session_state.res_buscador_pruebas = res
+                        guardar_en_historial("Buscador de Pruebas", f"Edad: {edad_bp}, Caso: {caso_bp}", res)
+                        st.rerun()
+                    else:
+                        st.error(res)
+                        st.session_state.res_buscador_pruebas = None
+            else:
+                st.warning("Ingresa los síntomas o el motivo para recomendar la batería.")
 
-            if st.session_state.res_buscador_pruebas:
-                st.markdown("---")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_buscador_pruebas)
-                st.markdown('</div>', unsafe_allow_html=True)
+        if st.session_state.res_buscador_pruebas:
+            st.markdown("---")
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_buscador_pruebas)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # 3. GENERADOR DE INFORMES
-        with tabs[2]:
-            st.subheader("📄 Generador de Informes Psicológicos con Plantilla Personalizada")
-            
-            col_inf1, col_inf2 = st.columns(2)
-            with col_inf1:
-                nombre_p = st.text_input("Nombre / Iniciales del paciente:", value="J.P.", key="inf_nom")
-                edad_p = st.text_input("Edad:", value="25 años", key="inf_edad")
-                genero_p = st.text_input("Género:", value="Femenino", key="inf_gen")
-                ocupacion_p = st.text_input("Ocupación:", value="Estudiante", key="inf_ocup")
-            with col_inf2:
-                enfoque_p = st.selectbox("Enfoque de redacción:", ["Clínico", "Educativo", "Neuropsicológico"], key="inf_enf")
-                plantilla_docx = st.file_uploader("Sube tu modelo/plantilla de informe (.docx) [Opcional]:", type=["docx"], key="inf_plantilla")
+    # ==========================================
+    # 3. GENERADOR DE INFORMES
+    # ==========================================
+    with tabs[2]:
+        st.subheader("📄 Generador de Informes Psicológicos con Plantilla Personalizada")
+        
+        col_inf1, col_inf2 = st.columns(2)
+        with col_inf1:
+            nombre_p = st.text_input("Nombre / Iniciales del paciente:", value="J.P.", key="inf_nom")
+            edad_p = st.text_input("Edad:", value="25 años", key="inf_edad")
+            genero_p = st.text_input("Género:", value="Femenino", key="inf_gen")
+            ocupacion_p = st.text_input("Ocupación:", value="Estudiante", key="inf_ocup")
+        with col_inf2:
+            enfoque_p = st.selectbox("Enfoque de redacción:", ["Clínico", "Educativo", "Neuropsicológico"], key="inf_enf")
+            plantilla_docx = st.file_uploader("Sube tu modelo/plantilla de informe (.docx) [Opcional]:", type=["docx"], key="inf_plantilla")
 
-            motivo_p = st.text_area("Motivo de Consulta:", placeholder="Detalla el motivo...", key="inf_motivo")
-            problema_p = st.text_area("Problema Actual y Antecedentes:", placeholder="Evolución del problema...", key="inf_prob")
-            pruebas_p = st.text_area("Pruebas Aplicadas y Resultados:", placeholder="Listado de pruebas y puntajes...", key="inf_pruebas")
-            obs_p = st.text_area("Observaciones Conductuales:", placeholder="Conducta observada...", key="inf_obs")
-            diag_p = st.text_area("Conclusiones y Diagnóstico:", placeholder="Diagnóstico e impresiones...", key="inf_diag")
+        motivo_p = st.text_area("Motivo de Consulta:", placeholder="Detalla el motivo...", key="inf_motivo")
+        problema_p = st.text_area("Problema Actual y Antecedentes:", placeholder="Evolución del problema...", key="inf_prob")
+        pruebas_p = st.text_area("Pruebas Aplicadas y Resultados:", placeholder="Listado de pruebas y puntajes...", key="inf_pruebas")
+        obs_p = st.text_area("Observaciones Conductuales:", placeholder="Conducta observada...", key="inf_obs")
+        diag_p = st.text_area("Conclusiones y Diagnóstico:", placeholder="Diagnóstico e impresiones...", key="inf_diag")
 
-            if st.button("Generar Informe Adaptado", key="btn_inf"):
-                if motivo_p.strip() or problema_p.strip():
-                    with st.spinner("Redactando informe psicológico..."):
-                        plantilla_texto = ""
-                        if plantilla_docx:
-                            plantilla_texto = extraer_texto_docx(plantilla_docx)
+        if st.button("Generar Informe Adaptado", key="btn_inf"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Has agotado tus créditos. Recarga para continuar.")
+            elif motivo_p.strip() or problema_p.strip():
+                with st.spinner("Redactando informe psicológico..."):
+                    plantilla_texto = ""
+                    if plantilla_docx:
+                        plantilla_texto = extraer_texto_docx(plantilla_docx)
 
-                        datos_dict = {
-                            "nombre": nombre_p, "edad": edad_p, "genero": genero_p, "ocupacion": ocupacion_p,
-                            "motivo": motivo_p, "problema_actual": problema_p, "pruebas_aplicadas": pruebas_p,
-                            "observaciones": obs_p, "diagnostico": diag_p
-                        }
+                    datos_dict = {
+                        "nombre": nombre_p, "edad": edad_p, "genero": genero_p, "ocupacion": ocupacion_p,
+                        "motivo": motivo_p, "problema_actual": problema_p, "pruebas_aplicadas": pruebas_p,
+                        "observaciones": obs_p, "diagnostico": diag_p
+                    }
 
-                        res_informe = generar_informe_premium(datos_dict, enfoque_p, plantilla_texto, api_key_env)
-                        
-                        if res_informe and not res_informe.startswith("❌"):
-                            st.session_state.res_generador_informes = res_informe
-                            doc_bytes = crear_documento_word(f"Informe Psicológico - {nombre_p}", res_informe)
-                            st.session_state.doc_informe_descargable = doc_bytes
+                    res_informe = generar_informe_premium(datos_dict, enfoque_p, plantilla_texto, api_key_env)
+                    
+                    if res_informe and not res_informe.startswith("❌"):
+                        st.session_state.res_generador_informes = res_informe
+                        doc_bytes = crear_documento_word(f"Informe Psicológico - {nombre_p}", res_informe)
+                        st.session_state.doc_informe_descargable = doc_bytes
 
-                            guardar_en_historial("Generador de Informes", f"Paciente: {nombre_p}", res_informe)
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
-                        else:
-                            st.error(res_informe)
-                            st.session_state.res_generador_informes = None
-                            st.session_state.doc_informe_descargable = None
-                else:
-                    st.warning("Completa al menos el motivo de consulta o el problema actual.")
+                        guardar_en_historial("Generador de Informes", f"Paciente: {nombre_p}", res_informe)
+                        st.rerun()
+                    else:
+                        st.error(res_informe)
+                        st.session_state.res_generador_informes = None
+                        st.session_state.doc_informe_descargable = None
+            else:
+                st.warning("Completa al menos el motivo de consulta o el problema actual.")
 
-            if st.session_state.res_generador_informes:
-                st.markdown("---")
-                if st.session_state.doc_informe_descargable:
-                    st.download_button(
-                        label="📥 Descargar Informe en Word (.docx)",
-                        data=st.session_state.doc_informe_descargable,
-                        file_name=f"Informe_{st.session_state.inf_nom}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key="btn_dl_inf"
-                    )
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_generador_informes)
-                st.markdown('</div>', unsafe_allow_html=True)
+        if st.session_state.res_generador_informes:
+            st.markdown("---")
+            if st.session_state.doc_informe_descargable:
+                st.download_button(
+                    label="📥 Descargar Informe en Word (.docx)",
+                    data=st.session_state.doc_informe_descargable,
+                    file_name=f"Informe_{st.session_state.inf_nom}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key="btn_dl_inf"
+                )
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_generador_informes)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-        # 4. ANALIZADOR DE SESIONES
-        with tabs[3]:
-            st.subheader("🎙️ Analizador de Sesiones Terapéuticas (Audio/Video o Texto)")
-            archivo_sesion = st.file_uploader(
-                "Sube la grabación de la sesión (Audio/Video hasta 500 MB):", 
-                type=["mp3", "wav", "m4a", "mp4", "aac", "ogg"], key="uploader_sesion"
-            )
-            texto_sesion = st.text_area("O pega la transcripción/notas clínicas de la sesión:", placeholder="Transcripción de la sesión...", key="txt_sesion")
+    # ==========================================
+    # 4. ANALIZADOR DE SESIONES
+    # ==========================================
+    with tabs[3]:
+        st.subheader("🎙️ Analizador de Sesiones Terapéuticas (Audio/Video o Texto)")
+        archivo_sesion = st.file_uploader(
+            "Sube la grabación de la sesión (Audio/Video hasta 500 MB):", 
+            type=["mp3", "wav", "m4a", "mp4", "aac", "ogg"], key="uploader_sesion"
+        )
+        texto_sesion = st.text_area("O pega la transcripción/notas clínicas de la sesión:", placeholder="Transcripción de la sesión...", key="txt_sesion")
 
-            if st.button("Procesar y Analizar Sesión", key="btn_sesion"):
+        if st.button("Procesar y Analizar Sesión", key="btn_sesion"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Has agotado tus créditos. Recarga para continuar.")
+            else:
                 transcripcion_final = texto_sesion.strip()
                 if archivo_sesion and not transcripcion_final:
                     with st.spinner("Transcribiendo archivo de audio/video con Whisper..."):
@@ -401,111 +442,109 @@ else:
                         if res and not res.startswith("❌"):
                             st.session_state.res_analizador_sesiones = res
                             guardar_en_historial("Analizador de Sesiones", "Análisis de Sesión Terapéutica", res)
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
+                            st.rerun()
                         else:
                             st.error(res)
                             st.session_state.res_analizador_sesiones = None
                 else:
                     st.warning("Ingresa la transcripción o sube un archivo válido de audio/video.")
 
-            if st.session_state.res_analizador_sesiones:
-                st.markdown("---")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_analizador_sesiones)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # 5. PSICOEDUCACIÓN
-        with tabs[4]:
-            st.subheader("📚 Generador de Material Psicoeducativo")
-            diag_base = st.text_input("Diagnóstico o Condición Base:", placeholder="Ej: Trastorno de Ansiedad Generalizada, TDAH...", key="psico_diag")
-            destinatario = st.selectbox("Destinatario del Material:", ["Paciente", "Familiares / Cuidadores", "Institución Educativa / Docentes"], key="psico_dest")
-
-            if st.button("Generar Guía Psicoeducativa", key="btn_psico"):
-                if diag_base.strip():
-                    with st.spinner("Redactando folleto psicoeducativo..."):
-                        res = generar_plantilla_psicoeducacion(diag_base, destinatario, api_key_env)
-                        if res and not res.startswith("❌"):
-                            st.session_state.res_psicoeducacion = res
-                            doc_bytes = crear_documento_word(f"Guía Psicoeducativa - {diag_base}", res)
-                            st.session_state.doc_psico_descargable = doc_bytes
-
-                            guardar_en_historial("Psicoeducación", f"{diag_base} -> {destinatario}", res)
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
-                        else:
-                            st.error(res)
-                            st.session_state.res_psicoeducacion = None
-                            st.session_state.doc_psico_descargable = None
-                else:
-                    st.warning("Escribe el diagnóstico o condición base.")
-
-            if st.session_state.res_psicoeducacion:
-                st.markdown("---")
-                if st.session_state.doc_psico_descargable:
-                    st.download_button(
-                        label="📥 Descargar Guía en Word (.docx)",
-                        data=st.session_state.doc_psico_descargable,
-                        file_name=f"Psicoeducacion_{st.session_state.psico_diag}.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        key="btn_dl_psico"
-                    )
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_psicoeducacion)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # 6. CORRECTOR PSICOMÉTRICO
-        with tabs[5]:
-            st.subheader("📝 Corrección e Interpretación de Puntajes Psicométricos")
-            col_cp1, col_cp2 = st.columns(2)
-            with col_cp1:
-                nombre_prueba = st.text_input("Nombre de la prueba:", placeholder="Ej: BDI-II, WAIS-IV...", key="cp_nombre")
-            with col_cp2:
-                edad_cp = st.number_input("Edad del paciente:", min_value=1, max_value=120, value=25, key="cp_edad")
-            puntajes_texto = st.text_area("Ingresa los puntajes o puntuaciones escalares/percentiles:", key="cp_puntajes")
-
-            if st.button("Interpretar Puntajes", key="btn_cp"):
-                if nombre_prueba.strip() and puntajes_texto.strip():
-                    with st.spinner("Analizando baremos y rangos normativos..."):
-                        res = interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, edad_cp, api_key_env)
-                        if res and not res.startswith("❌"):
-                            st.session_state.res_corrector_psicometrico = res
-                            guardar_en_historial("Corrector Psicométrico", f"{nombre_prueba} - {puntajes_texto}", res)
-                            if not es_premium:
-                                nuevas = incrementar_consultas(user["id"])
-                                if nuevas is not None:
-                                    st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
-                        else:
-                            st.error(res)
-                            st.session_state.res_corrector_psicometrico = None
-                else:
-                    st.warning("Ingresa el nombre de la prueba y los puntajes.")
-
-            if st.session_state.res_corrector_psicometrico:
-                st.markdown("---")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_corrector_psicometrico)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        # 7. MI HISTORIAL
-        with tabs[6]:
-            st.subheader("📂 Mi Historial de Consultas Realizadas")
-            st.write(f"Consultas acumuladas en cuenta: **{consultas_usadas}**")
+        if st.session_state.res_analizador_sesiones:
             st.markdown("---")
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_analizador_sesiones)
+            st.markdown('</div>', unsafe_allow_html=True)
 
-            if st.session_state.historial_consultas:
-                for idx, item in enumerate(reversed(st.session_state.historial_consultas)):
-                    with st.expander(f"📌 [{item['modulo']}] - Consulta #{len(st.session_state.historial_consultas) - idx}"):
-                        st.write("**Entrada:**")
-                        st.info(item["entrada"])
-                        st.write("**Resultado:**")
-                        st.markdown(item["resultado"])
+    # ==========================================
+    # 5. PSICOEDUCACIÓN
+    # ==========================================
+    with tabs[4]:
+        st.subheader("📚 Generador de Material Psicoeducativo")
+        diag_base = st.text_input("Diagnóstico o Condición Base:", placeholder="Ej: Trastorno de Ansiedad Generalizada, TDAH...", key="psico_diag")
+        destinatario = st.selectbox("Destinatario del Material:", ["Paciente", "Familiares / Cuidadores", "Institución Educativa / Docentes"], key="psico_dest")
+
+        if st.button("Generar Guía Psicoeducativa", key="btn_psico"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Has agotado tus créditos. Recarga para continuar.")
+            elif diag_base.strip():
+                with st.spinner("Redactando folleto psicoeducativo..."):
+                    res = generar_plantilla_psicoeducacion(diag_base, destinatario, api_key_env)
+                    if res and not res.startswith("❌"):
+                        st.session_state.res_psicoeducacion = res
+                        doc_bytes = crear_documento_word(f"Guía Psicoeducativa - {diag_base}", res)
+                        st.session_state.doc_psico_descargable = doc_bytes
+
+                        guardar_en_historial("Psicoeducación", f"{diag_base} -> {destinatario}", res)
+                        st.rerun()
+                    else:
+                        st.error(res)
+                        st.session_state.res_psicoeducacion = None
+                        st.session_state.doc_psico_descargable = None
             else:
-                st.info("Aún no has realizado consultas en esta sesión.")
+                st.warning("Escribe el diagnóstico o condición base.")
+
+        if st.session_state.res_psicoeducacion:
+            st.markdown("---")
+            if st.session_state.doc_psico_descargable:
+                st.download_button(
+                    label="📥 Descargar Guía en Word (.docx)",
+                    data=st.session_state.doc_psico_descargable,
+                    file_name=f"Psicoeducacion_{st.session_state.psico_diag}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key="btn_dl_psico"
+                )
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_psicoeducacion)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # ==========================================
+    # 6. CORRECTOR PSICOMÉTRICO
+    # ==========================================
+    with tabs[5]:
+        st.subheader("📝 Corrección e Interpretación de Puntajes Psicométricos")
+        col_cp1, col_cp2 = st.columns(2)
+        with col_cp1:
+            nombre_prueba = st.text_input("Nombre de la prueba:", placeholder="Ej: BDI-II, WAIS-IV...", key="cp_nombre")
+        with col_cp2:
+            edad_cp = st.number_input("Edad del paciente:", min_value=1, max_value=120, value=25, key="cp_edad")
+        puntajes_texto = st.text_area("Ingresa los puntajes o puntuaciones escalares/percentiles:", key="cp_puntajes")
+
+        if st.button("Interpretar Puntajes", key="btn_cp"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Has agotado tus créditos. Recarga para continuar.")
+            elif nombre_prueba.strip() and puntajes_texto.strip():
+                with st.spinner("Analizando baremos y rangos normativos..."):
+                    res = interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, edad_cp, api_key_env)
+                    if res and not res.startswith("❌"):
+                        st.session_state.res_corrector_psicometrico = res
+                        guardar_en_historial("Corrector Psicométrico", f"{nombre_prueba} - {puntajes_texto}", res)
+                        st.rerun()
+                    else:
+                        st.error(res)
+                        st.session_state.res_corrector_psicometrico = None
+            else:
+                st.warning("Ingresa el nombre de la prueba y los puntajes.")
+
+        if st.session_state.res_corrector_psicometrico:
+            st.markdown("---")
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_corrector_psicometrico)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # ==========================================
+    # 7. MI HISTORIAL
+    # ==========================================
+    with tabs[6]:
+        st.subheader("📂 Mi Historial de Consultas Realizadas")
+        st.write(f"Casos/Créditos consumidos en la cuenta: **{consultas_usadas}**")
+        st.markdown("---")
+
+        if st.session_state.historial_consultas:
+            for idx, item in enumerate(reversed(st.session_state.historial_consultas)):
+                with st.expander(f"📌 [{item['modulo']}] - Consulta #{len(st.session_state.historial_consultas) - idx}"):
+                    st.write("**Entrada:**")
+                    st.info(item["entrada"])
+                    st.write("**Resultado:**")
+                    st.markdown(item["resultado"])
+        else:
+            st.info("Aún no has realizado consultas en esta sesión.")
