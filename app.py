@@ -5,7 +5,7 @@ from database import (
     verificar_login,
     obtener_usuario_por_id,
     incrementar_consultas,
-    actualizar_plan_usuario,
+    recargar_creditos_usuario,
     crear_preferencia_pago
 )
 from engine import procesar_analisis
@@ -18,7 +18,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS exactos de la interfaz original
+# Estilos CSS
 st.markdown("""
     <style>
     .stApp { background-color: #FFFDF0 !important; color: #5C3A21 !important; }
@@ -31,19 +31,23 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Inicializar estado de sesión
+# Inicializar estados de sesión
 if "user" not in st.session_state:
     st.session_state.user = None
 
-# Capturar pago exitoso
+if "resultado_analisis" not in st.session_state:
+    st.session_state.resultado_analisis = None
+
+# Capturar pago exitoso y recargar +10 créditos
 query_params = st.query_params
 if query_params.get("pago") == "exitoso":
     user_id_pago = query_params.get("user_id")
     if user_id_pago:
-        actualizar_plan_usuario(user_id_pago, True)
-        if st.session_state.user and str(st.session_state.user["id"]) == str(user_id_pago):
-            st.session_state.user["es_premium"] = True
-        st.success("🎉 ¡Pago confirmado! Tu cuenta ha sido activada a Plan Premium.")
+        exito_recarga = recargar_creditos_usuario(user_id_pago, creditos_a_sumar=10)
+        if exito_recarga:
+            st.success("🎉 ¡Pago confirmado! Se han añadido +10 créditos a tu cuenta.")
+            if st.session_state.user and str(st.session_state.user["id"]) == str(user_id_pago):
+                st.session_state.user = obtener_usuario_por_id(user_id_pago)
         st.query_params.clear()
 
 def mostrar_logo(width=160):
@@ -52,7 +56,7 @@ def mostrar_logo(width=160):
     else:
         st.write("🦆 **PATU**")
 
-# AUTENTICACIÓN
+# VISTA DE LOGIN Y REGISTRO
 if not st.session_state.user:
     col_logo, col_header = st.columns([1, 4])
     with col_logo:
@@ -73,6 +77,7 @@ if not st.session_state.user:
                 exito, usuario, msg = verificar_login(email, password)
                 if exito:
                     st.session_state.user = usuario
+                    st.session_state.resultado_analisis = None
                     st.success(msg)
                     st.rerun()
                 else:
@@ -91,14 +96,13 @@ if not st.session_state.user:
                 exito, msg = registrar_usuario(nombre, email, password)
                 if exito:
                     st.success(msg)
-                    st.info("Ya puedes iniciar sesión con tu cuenta.")
                 else:
                     st.error(msg)
             else:
                 st.warning("Por favor completa todos los campos.")
 
+# PANEL PRINCIPAL LOGUEADO
 else:
-    # PANEL PRINCIPAL
     user = obtener_usuario_por_id(st.session_state.user["id"])
     if user:
         st.session_state.user = user
@@ -125,22 +129,23 @@ else:
         else:
             st.markdown("**Plan Actual:** 🌱 `PLAN FREE`")
             st.markdown("---")
-            st.write(f"📊 **Uso del Plan Gratuito:** {consultas_usadas}/{limite_gratis}")
+            st.write(f"📊 **Uso del Plan:** {consultas_usadas}/{limite_gratis}")
             restantes = max(0, limite_gratis - consultas_usadas)
-            st.markdown(f'<div class="caja-pruebas">Te quedan {restantes} registros de prueba.</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="caja-pruebas">Te quedan {restantes} créditos disponibles.</div>', unsafe_allow_html=True)
 
         st.markdown("---")
         if st.button("🚪 Cerrar Sesión"):
             st.session_state.user = None
+            st.session_state.resultado_analisis = None
             st.rerun()
 
-    # CONTROL DE LÍMITES
+    # CONTROL DE LÍMITES Y RECARGA
     if not puede_consultar:
-        st.warning(f"⚠️ Has alcanzado el límite de {limite_gratis} pruebas gratuitas.")
-        st.info("Adquiere la versión Premium para continuar utilizando las herramientas clínicas de forma ilimitada.")
+        st.warning(f"⚠️ Has agotado tus créditos disponibles.")
+        st.info("Recarga 10 créditos adicionales por solo S/. 2.00 para continuar realizando consultas.")
         link_pago, msg_pago = crear_preferencia_pago(user["id"], user["email"])
         if link_pago:
-            st.link_button("🚀 Adquirir Plan Premium con Mercado Pago", link_pago)
+            st.link_button("🚀 Recargar +10 Créditos con Mercado Pago (S/. 2.00)", link_pago)
         else:
             st.error(f"Error al generar enlace de pago: {msg_pago}")
 
@@ -156,7 +161,7 @@ else:
             "📂 Mi Historial"
         ])
 
-        # 1. ANALIZADOR CLÍNICO
+        # 1. ANALIZADOR CLÍNICO (HABILITADO IMÁGENES Y VOZ)
         with tabs[0]:
             st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
             col1, col2 = st.columns(2)
@@ -165,26 +170,50 @@ else:
             with col2:
                 etapa = st.selectbox("👶 / 🧑 Etapa de Desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"])
 
-            archivo = st.file_uploader("🎙️ Dictar o Cargar Documento / Narrativa Clínica", type=["pdf", "docx", "txt", "png", "jpg"], key="uploader_1")
-            instrucciones = st.text_area("✍️ Dictar o Escribir la Narrativa Clínica", placeholder="Escribe o adjunta las notas clínicas aquí...", key="txt_1")
+            st.write("---")
+            st.write("📷 **1. Cargar Imágenes o Documentos del Motivo de Consulta:**")
+            archivo = st.file_uploader(
+                "Sube capturas, fotos de fichas manuscritas, documentos PDF o imágenes de evaluaciones:",
+                type=["pdf", "docx", "txt", "png", "jpg", "jpeg"],
+                key="uploader_1"
+            )
+
+            st.write("🎙️ **2. Motivo de Consulta por Voz (Dictado Nivel Nativo del Navegador):**")
+            st.caption("Presiona el icono de micrófono de tu teclado en el cuadro de texto a continuación si estás desde un móvil/laptop, o habla mediante el micrófono de tu sistema.")
+            
+            audio_input = st.audio_input("Grabar notas o dictado de voz directamente:", key="audio_voice_1")
+
+            instrucciones = st.text_area(
+                "✍️ **3. Narrativa o Transcripción del Motivo de Consulta:**",
+                placeholder="Escribe o revisa la narrativa transcrita aquí...",
+                key="txt_1"
+            )
 
             if st.button("Procesar Análisis Clínico", key="btn_1"):
-                if archivo or instrucciones:
-                    with st.spinner("Procesando análisis clínico..."):
-                        prompt_completo = f"Edad: {edad}, Etapa: {etapa}. {instrucciones}"
-                        resultado = procesar_analisis(archivo, prompt_completo)
+                if archivo or instrucciones or audio_input:
+                    with st.spinner("Procesando análisis clínico multiaxial con IA..."):
+                        archivo_a_procesar = archivo if archivo else audio_input
+                        prompt_completo = f"Edad: {edad}, Etapa: {etapa}. Motivo de Consulta/Narrativa: {instrucciones}"
+                        
+                        resultado = procesar_analisis(archivo_a_procesar, prompt_completo)
+                        
                         if resultado:
-                            st.subheader("📄 Resultado del Análisis Diagnóstico:")
-                            st.markdown(resultado)
+                            st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
                                 if nuevas is not None:
                                     st.session_state.user["consultas_usadas"] = nuevas
                                 st.rerun()
                         else:
-                            st.error("Error al procesar la consulta.")
+                            st.error("Error al procesar la consulta con la API de IA.")
                 else:
-                    st.warning("Por favor ingresa la narrativa o sube un documento.")
+                    st.warning("Por favor ingresa una narrativa, graba audio o suba un archivo/imagen.")
+
+            # Mostrar resultado persistente
+            if st.session_state.resultado_analisis:
+                st.markdown("---")
+                st.subheader("📄 Resultado del Análisis Diagnóstico:")
+                st.markdown(st.session_state.resultado_analisis)
 
         # 2. BUSCADOR DE PRUEBAS
         with tabs[1]:
@@ -199,8 +228,7 @@ else:
                         prompt_prueba = f"Recomienda pruebas psicológicas y psicométricas estandarizadas para evaluar: {consulta_prueba}. Incluye nombre, edad de aplicación y qué mide."
                         resultado = procesar_analisis(None, prompt_prueba)
                         if resultado:
-                            st.subheader("🔍 Pruebas Recomendadas:")
-                            st.markdown(resultado)
+                            st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
                                 if nuevas is not None:
@@ -218,7 +246,7 @@ else:
                     with st.spinner("Generando informe..."):
                         resultado = procesar_analisis(None, f"Redacta un informe psicológico formal basado en: {datos_informe}")
                         if resultado:
-                            st.markdown(resultado)
+                            st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
                                 if nuevas is not None:
@@ -234,7 +262,7 @@ else:
                     with st.spinner("Analizando sesión..."):
                         resultado = procesar_analisis(None, f"Analiza estas notas de sesión clínica: {notas_sesion}")
                         if resultado:
-                            st.markdown(resultado)
+                            st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
                                 if nuevas is not None:
@@ -250,7 +278,7 @@ else:
                     with st.spinner("Generando explicación..."):
                         resultado = procesar_analisis(None, f"Crea una guía psicoeducativa clara para entregar a un paciente sobre: {tema_psico}")
                         if resultado:
-                            st.markdown(resultado)
+                            st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
                                 if nuevas is not None:
