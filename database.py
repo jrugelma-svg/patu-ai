@@ -56,7 +56,8 @@ def registrar_usuario(nombre, email, password):
                 "plan": plan_inicial
             }
             try:
-                supabase.table("usuarios").insert(data_tabla).execute()
+                # Se utiliza upsert para no fallar si ya existe
+                supabase.table("usuarios").upsert(data_tabla, on_conflict="id").execute()
             except Exception as e_db:
                 print("Nota en sincronización de tabla usuarios:", e_db)
 
@@ -70,7 +71,7 @@ def registrar_usuario(nombre, email, password):
 
 def verificar_login(email, password):
     """
-    Verifica las credenciales mediante Supabase Auth.
+    Verifica las credenciales mediante Supabase Auth y asegura la existencia del usuario en la DB pública.
     """
     supabase = get_supabase()
     email_clean = email.lower().strip()
@@ -90,9 +91,24 @@ def verificar_login(email, password):
             nombre = user_auth.user_metadata.get("nombre", "Usuario")
             lista_vip = [e.lower().strip() for e in ADMIN_EMAILS]
             plan_final = "admin" if email_clean in lista_vip else user_auth.user_metadata.get("plan", "free")
+            user_id = str(user_auth.id)
+
+            # GARANTIZAR QUE EL USUARIO EXISTA EN LA TABLA "usuarios"
+            data_tabla = {
+                "id": user_id,
+                "id_auth": user_id,
+                "nombre": nombre,
+                "email": email_clean,
+                "password_hash": "SUPABASE_AUTH_MANAGED",
+                "plan": plan_final
+            }
+            try:
+                supabase.table("usuarios").upsert(data_tabla, on_conflict="id").execute()
+            except Exception as e_sync:
+                print("Error al sincronizar usuario en login:", e_sync)
             
             return True, {
-                "id": str(user_auth.id),
+                "id": user_id,
                 "nombre": nombre,
                 "email": user_auth.email,
                 "plan": plan_final
