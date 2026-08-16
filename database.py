@@ -5,6 +5,9 @@ from supabase import create_client, Client
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
+# LÍMITE DE REGISTROS PARA USUARIOS GRATUITOS
+LIMITE_REGISTROS_FREE = 4
+
 def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
@@ -31,7 +34,6 @@ def registrar_usuario(nombre, email, password):
     plan_inicial = "admin" if email_clean in lista_vip else "free"
     
     try:
-        # 1. Crear el usuario en Supabase Auth
         res_auth = supabase.auth.sign_up({
             "email": email_clean,
             "password": password,
@@ -43,7 +45,6 @@ def registrar_usuario(nombre, email, password):
             }
         })
         
-        # 2. Insertar en la tabla usuarios usando el ID generado por Supabase Auth
         if res_auth.user:
             user_id = str(res_auth.user.id)
             data_tabla = {
@@ -107,8 +108,25 @@ def verificar_login(email, password):
 
     return False, "Correo o contraseña incorrectos."
 
-def guardar_historial(usuario_id, tipo_registro, titulo, contenido):
-    """Guarda un registro en la base de datos de Supabase."""
+def verificar_limite_usuario(usuario_id, plan_usuario):
+    """Verifica si el usuario alcanzó el límite de su plan."""
+    if plan_usuario in ["admin", "premium"]:
+        return True, "Acceso ilimitado"
+    
+    registros = obtener_historial_usuario(usuario_id)
+    total_registros = len(registros)
+    
+    if total_registros >= LIMITE_REGISTROS_FREE:
+        return False, f"🔒 Has alcanzado el límite del Plan Gratuito ({LIMITE_REGISTROS_FREE}/{LIMITE_REGISTROS_FREE} registros). ¡Actualiza a Premium para registros ilimitados!"
+    
+    return True, f"Te quedan {LIMITE_REGISTROS_FREE - total_registros} registros gratuitos."
+
+def guardar_historial(usuario_id, tipo_registro, titulo, contenido, plan_usuario="free"):
+    """Guarda un registro validando primero los límites del plan."""
+    puedes_guardar, mensaje = verificar_limite_usuario(usuario_id, plan_usuario)
+    if not puedes_guardar:
+        return False, mensaje
+
     supabase = get_supabase()
     try:
         data = {
@@ -118,8 +136,9 @@ def guardar_historial(usuario_id, tipo_registro, titulo, contenido):
             "contenido": contenido
         }
         supabase.table("historial_clinico").insert(data).execute()
+        return True, "Registro guardado exitosamente."
     except Exception as e:
-        print("Error guardando historial:", e)
+        return False, f"Error guardando historial: {e}"
 
 def obtener_historial_usuario(usuario_id):
     """Obtiene el historial persistente desde Supabase."""
