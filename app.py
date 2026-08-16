@@ -188,19 +188,20 @@ else:
             st.write("🎙️ **2. Dictar Motivo de Consulta por Voz:**")
             audio_input = st.audio_input("Grabar notas de voz:", key="audio_voice_1")
 
-            # Si el usuario graba un audio, transcribirlo automáticamente con Whisper
+            # --- LÓGICA DE TRANSCRIPCIÓN AUTOMÁTICA DE AUDIO ---
             if audio_input is not None:
                 audio_bytes = audio_input.getvalue()
                 if st.session_state.get("last_audio_bytes") != audio_bytes:
-                    with st.spinner("Transcribiendo audio de voz a texto..."):
+                    with st.spinner("🎙️ Transcribiendo nota de voz a texto..."):
                         transcripcion = transcribir_audio_groq(audio_input)
-                        if not transcripcion.startswith("Error"):
-                            st.session_state.texto_narrativa = transcripcion
+                        if transcripcion and not str(transcripcion).startswith("Error"):
+                            st.session_state.texto_narrativa = str(transcripcion).strip()
                             st.session_state["last_audio_bytes"] = audio_bytes
-                            st.success("¡Voz transcrita exitosamente!")
+                            st.success("✅ ¡Voz transcrita exitosamente en el cuadro de texto!")
                         else:
-                            st.error(transcripcion)
+                            st.error(f"Error al transcribir: {transcripcion}")
 
+            # Cuadro de texto sincronizado con session_state
             instrucciones = st.text_area(
                 "✍️ **3. Narrativa o Transcripción del Motivo de Consulta:**",
                 value=st.session_state.texto_narrativa,
@@ -208,13 +209,24 @@ else:
                 key="txt_1"
             )
             
-            # Actualizar el session_state si el usuario edita a mano el texto
+            # Guardar modificaciones manuales del usuario
             st.session_state.texto_narrativa = instrucciones
 
+            # BOTÓN DE PROCESAMIENTO
             if st.button("Procesar Análisis Clínico", key="btn_1"):
-                if archivo or instrucciones.strip():
+                texto_a_procesar = instrucciones.strip()
+                
+                # Transcripción de respaldo si presionó el botón directamente con el audio sin esperar
+                if not texto_a_procesar and audio_input is not None:
+                    with st.spinner("Transcribiendo audio antes de analizar..."):
+                        transcripcion = transcribir_audio_groq(audio_input)
+                        if transcripcion and not str(transcripcion).startswith("Error"):
+                            texto_a_procesar = str(transcripcion).strip()
+                            st.session_state.texto_narrativa = texto_a_procesar
+
+                if archivo or texto_a_procesar:
                     with st.spinner("Procesando análisis clínico con IA..."):
-                        prompt_completo = f"Edad: {edad}, Etapa: {etapa}. Motivo de Consulta/Narrativa: {instrucciones}"
+                        prompt_completo = f"Edad: {edad}, Etapa: {etapa}. Motivo de Consulta/Narrativa: {texto_a_procesar}"
                         
                         resultado = procesar_analisis(archivo, prompt_completo)
                         
