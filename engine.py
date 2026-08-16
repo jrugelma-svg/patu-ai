@@ -4,7 +4,6 @@ import base64
 import groq
 import docx
 from io import BytesIO
-from PIL import Image
 
 try:
     import pypdf
@@ -93,26 +92,33 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
 
 
 def analizar_caso_inicial(narrativa_completa, api_key=None):
-    """Analiza el caso clínico devolviendo brechas, preguntas e hipótesis DSM-5/CIE-11."""
+    """Analiza el caso clínico devolviendo evaluación multiaxial, códigos, brechas y pruebas recomendadas."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     prompt = f"""
-    Eres un psicólogo clínico senior. Analiza detalladamente el siguiente caso clínico y genera una evaluación en la siguiente estructura exacta:
+    Eres un psicólogo clínico senior y experto en psicodiagnóstico. Analiza detalladamente el siguiente caso clínico y redacta una evaluación clínica estructurada obligatoriamente en las siguientes secciones exactas:
 
     ### 1. Resumen Sintomático Principal
-    (Sintetiza la clínica expresada)
+    (Síntesis cualitativa de la clínica expresada, afecto, conducta y pensamiento)
 
-    ### 2. Brechas de Información o Datos Faltantes Críticos
-    (Indica qué información relevante hace falta indagar)
+    ### 2. Brechas de Información y Datos Faltantes Críticos
+    (Información relevante indispensable por indagar)
 
     ### 3. Preguntas Sugeridas para la Siguiente Consulta
     (Listado de preguntas clínicas clave para profundizar)
 
-    ### 4. Hipótesis Diagnósticas Preliminares (DSM-5 / CIE-11)
-    (Proporciona los posibles trastornos según los criterios DSM-5 / CIE-11 con su justificación)
+    ### 4. Evaluación Diagnóstica y Formulación Multiaxial (DSM-5 / CIE-10 / CIE-11)
+    - **Eje I / Trastornos Clínicos:** (Incluir nombre exacto y códigos DSM-5 y CIE-10/CIE-11)
+    - **Eje II / Trastornos de la Personalidad y Desarrollo:** (Incluir diagnósticos o rasgos con códigos)
+    - **Eje III / Condiciones Médicas Generales:** (Enfermedades físicas o hallazgos somáticos)
+    - **Eje IV / Problemas Psicosociales y Ambientales:** (Factores de estrés, red de apoyo, estresores)
+    - **Eje V / Evaluación de la Actividad Global (GAF/EEAG):** (Estimación del nivel de funcionamiento actual)
+
+    ### 5. Batería de Pruebas Psicométricas Sugeridas
+    (Listado de tests e inventarios normados recomendados para confirmar la hipótesis, indicando qué evalúa cada uno y por qué se aplica a este caso)
 
     CASO CLÍNICO:
     "{narrativa_completa}"
@@ -321,17 +327,18 @@ def analizar_imagen_clinica(archivo_imagen, prompt_instrucciones, api_key=None):
 
 
 def procesar_analisis(archivo, instrucciones):
-    """Función de procesamiento general para documentos y consultas en lote."""
+    """Función de procesamiento general para documentos e imágenes."""
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
-        return "❌ Error: No se encontró la variable GROQ_API_KEY en los Secrets de Streamlit."
+        return "❌ Error: No se encontró la variable GROQ_API_KEY."
 
     try:
         contenido_texto = ""
         nombre = getattr(archivo, 'name', '').lower() if archivo else ""
 
         if nombre.endswith(('.png', '.jpg', '.jpeg', '.webp')):
-            return analizar_imagen_clinica(archivo, instrucciones, api_key)
+            prompt_vis = f"{instrucciones}. Incluye Formulación Multiaxial DSM-5/CIE-10/CIE-11 con códigos y Pruebas Psicométricas Sugeridas."
+            return analizar_imagen_clinica(archivo, prompt_vis, api_key)
 
         if nombre.endswith('.docx'):
             contenido_texto = extraer_texto_docx(archivo)
@@ -344,13 +351,20 @@ def procesar_analisis(archivo, instrucciones):
         
         prompt = f"""
         Eres un asistente analista experto en psicología clínica.
-        Analiza el siguiente caso:
+        Analiza el siguiente caso de forma exhaustiva:
 
-        INSTRUCCIONES / CONTEXTO:
+        INSTRUCCIONES Y CONTEXTO:
         "{instrucciones}"
 
-        CONTENIDO ADICIONAL DEL DOCUMENTO:
+        DOCUMENTO ADICIONAL:
         "{contenido_texto}"
+
+        Asegúrate de incluir obligatoriamente:
+        1. Resumen Sintomático.
+        2. Brechas de Información.
+        3. Preguntas para la Siguiente Consulta.
+        4. Evaluación Multiaxial DSM-5 / CIE-10 / CIE-11 (Ejes I al V con códigos diagnósticos).
+        5. Batería de Pruebas Psicométricas Recomendadas.
         """
         
         response = client.chat.completions.create(
