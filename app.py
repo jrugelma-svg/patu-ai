@@ -126,8 +126,23 @@ usuario_actual = st.session_state["usuario"]
 
 with st.sidebar:
     st.markdown(f"### 👤 Usuario: **{usuario_actual['nombre']}**")
-    plan_tag = "⭐ PREMIUM" if usuario_actual['plan'] == 'premium' else "🌱 PLAN FREE"
+    plan_tag = "⭐ PREMIUM / ADMIN" if usuario_actual['plan'] in ['premium', 'admin'] else "🌱 PLAN FREE"
     st.markdown(f"**Plan Actual:** `{plan_tag}`")
+    
+    # CONTADOR Y BARRA DE PROGRESO DE PLAN GRATUITO
+    if usuario_actual['plan'] not in ['premium', 'admin']:
+        historial_usr = db.obtener_historial_usuario(usuario_actual["id"])
+        usos_usados = len(historial_usr)
+        usos_restantes = max(0, 4 - usos_usados)
+        
+        st.markdown("---")
+        st.caption(f"📊 **Uso del Plan Gratuito:** {usos_usados}/4")
+        st.progress(min(usos_usados / 4.0, 1.0))
+        
+        if usos_restantes == 0:
+            st.error("🔒 Límite de 4 registros alcanzado.")
+        else:
+            st.info(f"Te quedan {usos_restantes} registros de prueba.")
     
     if st.button("🚪 Cerrar Sesión"):
         st.session_state["usuario"] = None
@@ -203,8 +218,18 @@ with tab1:
                 with st.spinner("Procesando hipótesis clínicas..."):
                     res = engine.analizar_caso_inicial(narrativa, api_key)
                     st.markdown(res)
-                    db.guardar_historial(usuario_actual["id"], "Análisis Inicial", f"Caso Edad {edad_paciente}", res)
-                    st.toast("💾 Análisis guardado en tu historial")
+                    
+                    ok_guardar, msg_guardar = db.guardar_historial(
+                        usuario_actual["id"], 
+                        "Análisis Inicial", 
+                        f"Caso Edad {edad_paciente}", 
+                        res, 
+                        plan_usuario=usuario_actual["plan"]
+                    )
+                    if ok_guardar:
+                        st.toast("💾 Análisis guardado en tu historial")
+                    else:
+                        st.error(msg_guardar)
                     
     with col2:
         if st.button("🧪 Sugerir Batería Psicométrica"):
@@ -214,7 +239,18 @@ with tab1:
                 with st.spinner("Sugeriendo batería..."):
                     res = engine.obtener_pruebas_psicometricas(narrativa, edad_paciente, etapa_paciente, api_key)
                     st.markdown(res)
-                    db.guardar_historial(usuario_actual["id"], "Sugerencia Pruebas", f"Batería para {edad_paciente} años", res)
+                    
+                    ok_guardar, msg_guardar = db.guardar_historial(
+                        usuario_actual["id"], 
+                        "Sugerencia Pruebas", 
+                        f"Batería para {edad_paciente} años", 
+                        res, 
+                        plan_usuario=usuario_actual["plan"]
+                    )
+                    if ok_guardar:
+                        st.toast("💾 Batería guardada en tu historial")
+                    else:
+                        st.error(msg_guardar)
 
 # ---------------------------------------------------------
 # TAB 2: BUSCADOR DE PRUEBAS
@@ -260,10 +296,19 @@ with tab3:
             with st.spinner("Redactando informe..."):
                 res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_extraida, api_key)
                 st.markdown(res)
-                db.guardar_historial(usuario_actual["id"], "Informe Psicológico", f"Informe: {nombre or 'Paciente'}", res)
                 
-                doc_bytes = engine.crear_documento_word(f"Informe - {nombre or 'Paciente'}", res)
-                st.download_button(label="📥 Descargar Informe en Word (.docx)", data=doc_bytes, file_name=f"Informe_{nombre or 'Paciente'}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                ok_guardar, msg_guardar = db.guardar_historial(
+                    usuario_actual["id"], 
+                    "Informe Psicológico", 
+                    f"Informe: {nombre or 'Paciente'}", 
+                    res, 
+                    plan_usuario=usuario_actual["plan"]
+                )
+                if ok_guardar:
+                    doc_bytes = engine.crear_documento_word(f"Informe - {nombre or 'Paciente'}", res)
+                    st.download_button(label="📥 Descargar Informe en Word (.docx)", data=doc_bytes, file_name=f"Informe_{nombre or 'Paciente'}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                else:
+                    st.error(msg_guardar)
 
 # ---------------------------------------------------------
 # TAB 4: ANALIZADOR DE SESIONES
@@ -280,7 +325,16 @@ with tab4:
                 with st.spinner("Analizando..."):
                     analisis = engine.analizar_transcripcion_sesion(transcripcion, api_key)
                     st.markdown(analisis)
-                    db.guardar_historial(usuario_actual["id"], "Análisis Sesión Audio", f"Sesión: {archivo_audio.name}", analisis)
+                    
+                    ok_guardar, msg_guardar = db.guardar_historial(
+                        usuario_actual["id"], 
+                        "Análisis Sesión Audio", 
+                        f"Sesión: {archivo_audio.name}", 
+                        analisis, 
+                        plan_usuario=usuario_actual["plan"]
+                    )
+                    if not ok_guardar:
+                        st.error(msg_guardar)
 
 # ---------------------------------------------------------
 # TAB 5: PSICOEDUCACIÓN
@@ -296,7 +350,16 @@ with tab5:
             with st.spinner("Elaborando guía..."):
                 res = engine.generar_plantilla_psicoeducacion(diag_base, destinatario, api_key)
                 st.markdown(res)
-                db.guardar_historial(usuario_actual["id"], "Psicoeducación", f"Guía: {diag_base[:30]}", res)
+                
+                ok_guardar, msg_guardar = db.guardar_historial(
+                    usuario_actual["id"], 
+                    "Psicoeducación", 
+                    f"Guía: {diag_base[:30]}", 
+                    res, 
+                    plan_usuario=usuario_actual["plan"]
+                )
+                if not ok_guardar:
+                    st.error(msg_guardar)
 
 # ---------------------------------------------------------
 # TAB 6: CORRECTOR PSICOMÉTRICO
@@ -312,7 +375,16 @@ with tab6:
             with st.spinner("Interpretar puntajes..."):
                 res = engine.interpretar_puntajes_psicometricos(prueba_nom, puntajes_input, edad_paciente, api_key)
                 st.markdown(res)
-                db.guardar_historial(usuario_actual["id"], "Corrección Psicométrica", f"Prueba: {prueba_nom}", res)
+                
+                ok_guardar, msg_guardar = db.guardar_historial(
+                    usuario_actual["id"], 
+                    "Corrección Psicométrica", 
+                    f"Prueba: {prueba_nom}", 
+                    res, 
+                    plan_usuario=usuario_actual["plan"]
+                )
+                if not ok_guardar:
+                    st.error(msg_guardar)
 
 # ---------------------------------------------------------
 # TAB 7: HISTORIAL DEL USUARIO
