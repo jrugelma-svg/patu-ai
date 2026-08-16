@@ -1,128 +1,149 @@
 import os
-from supabase import create_client, Client
 import bcrypt
 import mercadopago
+import streamlit as st
+from supabase import create_client, Client
 
-# Inicializar cliente de Supabase
-url = os.getenv("SUPABASE_URL")
-key = os.getenv("SUPABASE_KEY")
+# Inicializar cliente de Supabase desde Streamlit Secrets / Env Vars
+url = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
+key = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
 
 if not url or not key:
     raise ValueError("Faltan las credenciales de Supabase en las variables de entorno.")
 
 supabase: Client = create_client(url, key)
 
+# Inicializar SDK de Mercado Pago desde Streamlit Secrets / Env Vars
+mp_token = st.secrets.get("MERCADOPAGO_ACCESS_TOKEN", os.getenv("MERCADOPAGO_ACCESS_TOKEN"))
+if mp_token:
+    sdk = mercadopago.SDK(mp_token)
+else:
+    sdk = None
+
 
 def registrar_usuario(nombre, email, password):
-    """Registra un nuevo usuario en la base de datos con contraseña encriptada."""
+    """
+    Registra un nuevo usuario con la contraseña encriptada usando bcrypt.
+    """
     try:
-        # Verificar si el correo ya existe
+        # Verificar si el usuario ya existe
         res = supabase.table("usuarios").select("id").eq("email", email).execute()
-        if len(res.data) > 0:
+        if res.data:
             return False, "El correo electrónico ya está registrado."
 
         # Encriptar la contraseña
         salt = bcrypt.gensalt()
         hashed_pw = bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
-        # Insertar nuevo usuario
-        data = {
+        # Insertar usuario
+        nuevo_usuario = {
             "nombre": nombre,
             "email": email,
-            "password": hashed_pw,
-            "plan": "gratuito",
-            "consultas_usadas": 0
+            "password_hash": hashed_pw,
+            "consultas_usadas": 0,
+            "es_premium": False
         }
-        supabase.table("usuarios").insert(data).execute()
+        supabase.table("usuarios").insert(nuevo_usuario).execute()
         return True, "Usuario registrado exitosamente."
     except Exception as e:
-        return False, f"Error al registrar: {e}"
+        return False, f"Error al registrar usuario: {str(e)}"
 
 
 def verificar_login(email, password):
-    """Verifica el correo y contraseña del usuario."""
+    """
+    Valida las credenciales de acceso del usuario.
+    """
     try:
         res = supabase.table("usuarios").select("*").eq("email", email).execute()
-        if len(res.data) == 0:
-            return False, None, "Usuario no encontrado."
+        if not res.data:
+            return None, "Usuario no encontrado."
 
         usuario = res.data[0]
-        # Verificar contraseña encriptada
-        if bcrypt.checkpw(password.encode('utf-8'), usuario['password'].encode('utf-8')):
-            return True, usuario, "Inicio de sesión exitoso."
+        stored_hash = usuario.get("password_hash")
+
+        if stored_hash and bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
+            return usuario, "Inicio de sesión exitoso."
         else:
-            return False, None, "Contraseña incorrecta."
+            return None, "Contraseña incorrecta."
     except Exception as e:
-        return False, None, f"Error al iniciar sesión: {e}"
+        return None, f"Error en la verificación: {str(e)}"
 
 
 def obtener_usuario_por_id(user_id):
-    """Obtiene los datos actualizados de un usuario por su ID."""
+    """
+    Obtiene los datos actualizados del usuario por su ID.
+    """
     try:
         res = supabase.table("usuarios").select("*").eq("id", user_id).execute()
-        if len(res.data) > 0:
+        if res.data:
             return res.data[0]
         return None
     except Exception as e:
-        print(f"Error obteniendo usuario: {e}")
+        st.error(f"Error al obtener datos del usuario: {str(e)}")
         return None
 
 
 def incrementar_consultas(user_id):
-    """Suma 1 al contador de consultas del usuario."""
+    """
+    Suma una consulta realizada al contador del usuario.
+    """
     try:
         usuario = obtener_usuario_por_id(user_id)
         if usuario:
-            nuevas_consultas = usuario.get("consultas_usadas", 0) + 1
-            supabase.table("usuarios").update({"consultas_usadas": nuevas_consultas}).eq("id", user_id).execute()
-            return nuevas_consultas
-        return 0
+            consultas_actuales = usuario.get("consultas_usadas", 0) + 1
+            supabase.table("usuarios").update({"consultas_usadas": consultas_actuales}).eq("id", user_id).execute()
+            return consultas_actuales
+        return None
     except Exception as e:
-        print(f"Error al incrementar consultas: {e}")
-        return 0
-
-
-def actualizar_plan_usuario(user_id, nuevo_plan="premium"):
-    """Actualiza el plan del usuario (gratuito -> premium)."""
-    try:
-        supabase.table("usuarios").update({"plan": nuevo_plan}).eq("id", user_id).execute()
-        return True, f"Usuario actualizado a {nuevo_plan} exitosamente."
-    except Exception as e:
-        return False, f"Error actualizando plan: {e}"
-
-
-def crear_preferencia_pago(user_id, email, precio=10.0, plan_nombre="Plan Premium PATU"):
-    """Genera el link de pago automático en Mercado Pago."""
-    token = os.getenv("MERCADOPAGO_ACCESS_TOKEN")
-    if not token:
+        st.error(f"Error al actualizar consultas: {str(e)}")
         return None
 
-    sdk = mercadopago.SDK(token)
 
-    # URL pública de tu app desplegada en Streamlit
-    app_url = "https://patu-ai-ripezmnuqetlldnw52nhua.streamlit.app/"
+def actualizar_plan_usuario(user_id, es_premium=True):
+    """
+    Actualiza el estado del usuario a Premium tras la confirmación del pago.
+    """
+    try:
+        supabase.table("usuarios").update({"es_premium": es_premium}).eq("id", user_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error al actualizar plan: {str(e)}")
+        return False
 
-    preference_data = {
-        "items": [
-            {
-                "title": plan_nombre,
-                "quantity": 1,
-                "unit_price": float(precio),
-                "currency_id": "PEN"
-            }
-        ],
-        "payer": {
-            "email": email
-        },
-        "back_urls": {
-            "success": f"{app_url}?pago=exitoso&user_id={user_id}",
-            "failure": f"{app_url}?pago=fallido",
-            "pending": f"{app_url}?pago=pendiente"
-        },
-        "auto_return": "approved",
-        "external_reference": str(user_id)
-    }
 
-    preference_response = sdk.preference().create(preference_data)
-    preference = preference_response.get("response", {})
-    return preference.get("init_point")
+def crear_preferencia_pago(user_id, email):
+    """
+    Genera un link de pago en Mercado Pago para activar la versión Premium.
+    """
+    if not sdk:
+        return None, "El servicio de Mercado Pago no está configurado."
+
+    try:
+        preference_data = {
+            "items": [
+                {
+                    "title": "PATU Workstation - Suscripción Premium / Recarga",
+                    "quantity": 1,
+                    "unit_price": 29.90,  # Monto en la moneda configurada en tu cuenta
+                    "currency_id": "PEN"   # Ajusta a tu moneda si es necesario (ej. PEN, ARS, MXN)
+                }
+            ],
+            "payer": {
+                "email": email
+            },
+            "external_reference": str(user_id),
+            "back_urls": {
+                "success": "https://patu-ai-ripezmnuqetlldnw52nhua.streamlit.app",
+                "failure": "https://patu-ai-ripezmnuqetlldnw52nhua.streamlit.app",
+                "pending": "https://patu-ai-ripezmnuqetlldnw52nhua.streamlit.app"
+            },
+            "auto_return": "approved"
+        }
+
+        preference_response = sdk.preference().create(preference_data)
+        preference = preference_response["response"]
+        
+        # Devuelve el link de checkout
+        return preference.get("init_point"), "Preferencia creada correctamente."
+    except Exception as e:
+        return None, f"Error al generar la preferencia de pago: {str(e)}"
