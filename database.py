@@ -6,9 +6,9 @@ from supabase import create_client, Client
 
 # Lista de correos de desarrolladores (Acceso Premium ilimitado automático)
 DESARROLLADORES = [
-    "jhordanmartinez164@gmail.com",
-    "kujojosep62@gmail.com",
-    "desarrollador3@gmail.com",
+    "jrugelma@ucvvirtual.edu.pe",
+    "asullonfe@ucvvirtual.edu.pe",
+    "djuarezro@ucvvirtual.edu.pe",
     "desarrollador4@gmail.com",
     "desarrollador5@gmail.com",
     "desarrollador6@gmail.com"
