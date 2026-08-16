@@ -14,7 +14,7 @@ DESARROLLADORES = [
     "desarrollador6@gmail.com"
 ]
 
-# Inicializar cliente de Supabase desde Streamlit Secrets / Env Vars
+# Inicializar cliente de Supabase
 url = st.secrets.get("SUPABASE_URL", os.getenv("SUPABASE_URL"))
 key = st.secrets.get("SUPABASE_KEY", os.getenv("SUPABASE_KEY"))
 
@@ -38,12 +38,12 @@ def es_correo_desarrollador(email):
 
 def registrar_usuario(nombre, email, password):
     """
-    Registra un usuario mediante Supabase Auth para enviar correo de verificación.
+    Registra un usuario de forma directa en Supabase Auth y en la tabla pública.
     """
     try:
         email_clean = email.strip().lower()
         
-        # 1. Registrar en el sistema de autenticación de Supabase (envía email de confirmación)
+        # 1. Registrar en Supabase Auth
         res = supabase.auth.sign_up({
             "email": email_clean,
             "password": password,
@@ -57,7 +57,7 @@ def registrar_usuario(nombre, email, password):
         if res.user:
             es_dev = es_correo_desarrollador(email_clean)
             
-            # 2. Guardar perfil inicial en la tabla pública de usuarios
+            # 2. Intentar guardar en la tabla pública de usuarios
             nuevo_usuario = {
                 "id": res.user.id,
                 "nombre": nombre,
@@ -68,32 +68,30 @@ def registrar_usuario(nombre, email, password):
             }
             supabase.table("usuarios").insert(nuevo_usuario).execute()
             
-            msg = "Registro exitoso. Revisa tu correo electrónico para confirmar tu cuenta antes de iniciar sesión."
-            if es_dev:
-                msg += " (Cuenta con beneficios de Desarrollador)."
-            return True, msg
+            return True, "Registro exitoso. ¡Bienvenido a PATU!"
 
         return False, "No se pudo completar el registro."
 
     except Exception as e:
-        return False, f"Error al registrar usuario: {str(e)}"
+        error_str = str(e)
+        if "already exists" in error_str or "duplicate key" in error_str:
+            return False, "Este correo electrónico ya se encuentra registrado. Intenta iniciar sesión."
+        return False, f"Error al registrar usuario: {error_str}"
 
 
 def verificar_login(email, password):
     """
-    Inicia sesión validando credenciales y estado de correo a través de Supabase Auth.
+    Inicia sesión validando credenciales a través de Supabase Auth.
     """
     try:
         email_clean = email.strip().lower()
         
-        # Iniciar sesión vía Supabase Auth
         auth_res = supabase.auth.sign_in_with_password({
             "email": email_clean,
             "password": password
         })
         
         if auth_res.user:
-            # Obtener los datos del perfil desde la tabla pública
             res = supabase.table("usuarios").select("*").eq("id", auth_res.user.id).execute()
             
             if not res.data:
@@ -101,18 +99,15 @@ def verificar_login(email, password):
 
             usuario = res.data[0]
 
-            # Actualizar automáticamente a Premium si es correo dev
             if es_correo_desarrollador(email_clean) and not usuario.get("es_premium", False):
-                actualizar_plan_usuario(usuario["id"], True)
+                supabase.table("usuarios").update({"es_premium": True}).eq("id", usuario["id"]).execute()
                 usuario["es_premium"] = True
 
             return True, usuario, "Inicio de sesión exitoso."
 
     except Exception as e:
         mensaje_error = str(e)
-        if "Email not confirmed" in mensaje_error:
-            return False, None, "Por favor, confirma tu correo electrónico antes de ingresar."
-        elif "Invalid login credentials" in mensaje_error:
+        if "Invalid login credentials" in mensaje_error:
             return False, None, "Correo o contraseña incorrectos."
         return False, None, f"Error en el inicio de sesión: {mensaje_error}"
 
@@ -143,18 +138,25 @@ def incrementar_consultas(user_id):
         return None
 
 
-def actualizar_plan_usuario(user_id, es_premium=True):
-    """Actualiza el estado del usuario a Premium tras el pago o por rol dev."""
+def recargar_creditos_usuario(user_id, creditos_a_sumar=10):
+    """
+    Recarga créditos al usuario restando consultas usadas para otorgar nuevo saldo.
+    """
     try:
-        supabase.table("usuarios").update({"es_premium": es_premium}).eq("id", user_id).execute()
-        return True
+        usuario = obtener_usuario_por_id(user_id)
+        if usuario:
+            consultas_actuales = usuario.get("consultas_usadas", 0)
+            nuevas_consultas = max(0, consultas_actuales - creditos_a_sumar)
+            supabase.table("usuarios").update({"consultas_usadas": nuevas_consultas}).eq("id", user_id).execute()
+            return True
+        return False
     except Exception as e:
-        st.error(f"Error al actualizar plan: {str(e)}")
+        st.error(f"Error al recargar créditos: {str(e)}")
         return False
 
 
 def crear_preferencia_pago(user_id, email):
-    """Genera un link de pago en Mercado Pago para activar la versión Premium por S/. 2.00."""
+    """Genera un link de pago en Mercado Pago para recargar +10 créditos por S/. 2.00."""
     if not sdk:
         return None, "El servicio de Mercado Pago no está configurado."
 
@@ -162,7 +164,7 @@ def crear_preferencia_pago(user_id, email):
         preference_data = {
             "items": [
                 {
-                    "title": "PATU Workstation - Suscripción Premium / Recarga",
+                    "title": "PATU Workstation - Recarga de 10 Créditos",
                     "quantity": 1,
                     "unit_price": 2.00,
                     "currency_id": "PEN"
