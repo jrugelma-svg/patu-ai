@@ -10,21 +10,19 @@ def get_supabase() -> Client:
 
 # ==============================================================================
 # LISTA DE CORREOS VIP / DESARROLLADORES (ACCESO ILIMITADO AUTOMÁTICO)
-# Coloca aquí los correos reales de tu equipo (incluso antes de que se registren).
 # ==============================================================================
 ADMIN_EMAILS = [
-    "jrugelma@ucvvirtual.edu.pe",  # Correo 1
-    "rugeljhoan@gmail.com",   # Correo 2
-    "asullonfe@ucvvirtual.edu.pe",   # Correo 3
-    "djuarezro@ucvvirtual.edu.pe",   # Correo 4
-    "maryeli25056@gmail.com",   # Correo 5
-    "favioreyes@ucvvirtual.edu.pe",   # Correo 6
+    "jrugelma@ucvvirtual.edu.pe",
+    "desarrollador2@ejemplo.com",
+    "desarrollador3@ejemplo.com",
+    "desarrollador4@ejemplo.com",
+    "desarrollador5@ejemplo.com",
+    "desarrollador6@ejemplo.com",
 ]
 
 def registrar_usuario(nombre, email, password):
     """
-    Registra un nuevo usuario mediante Supabase Auth.
-    Supabase enviará automáticamente un correo de confirmación.
+    Registra un nuevo usuario mediante Supabase Auth y sincroniza la tabla usuarios.
     """
     supabase = get_supabase()
     email_clean = email.lower().strip()
@@ -33,7 +31,7 @@ def registrar_usuario(nombre, email, password):
     plan_inicial = "admin" if email_clean in lista_vip else "free"
     
     try:
-        # 1. Registrar usuario en Supabase Auth
+        # 1. Crear el usuario en Supabase Auth
         res_auth = supabase.auth.sign_up({
             "email": email_clean,
             "password": password,
@@ -45,11 +43,12 @@ def registrar_usuario(nombre, email, password):
             }
         })
         
-        # 2. Guardar datos complementarios en la tabla de usuarios
+        # 2. Insertar en la tabla usuarios usando el ID generado por Supabase Auth
         if res_auth.user:
+            user_id = str(res_auth.user.id)
             data_tabla = {
-                "id": res_auth.user.id,
-                "id_auth": res_auth.user.id,
+                "id": user_id,
+                "id_auth": user_id,
                 "nombre": nombre,
                 "email": email_clean,
                 "password_hash": "SUPABASE_AUTH_MANAGED",
@@ -58,7 +57,7 @@ def registrar_usuario(nombre, email, password):
             try:
                 supabase.table("usuarios").insert(data_tabla).execute()
             except Exception as e_db:
-                print("Nota en tabla usuarios:", e_db)
+                print("Nota en sincronización de tabla usuarios:", e_db)
 
         return True, "📧 Te hemos enviado un correo de confirmación. Por favor revisa tu bandeja de entrada (o carpeta de SPAM) y confirma tu cuenta antes de iniciar sesión."
         
@@ -71,13 +70,11 @@ def registrar_usuario(nombre, email, password):
 def verificar_login(email, password):
     """
     Verifica las credenciales mediante Supabase Auth.
-    Si el correo no ha sido verificado, rehusará el inicio de sesión.
     """
     supabase = get_supabase()
     email_clean = email.lower().strip()
     
     try:
-        # Intentar iniciar sesión en Supabase Auth
         res_auth = supabase.auth.sign_in_with_password({
             "email": email_clean,
             "password": password
@@ -86,18 +83,15 @@ def verificar_login(email, password):
         user_auth = res_auth.user
         
         if user_auth:
-            # Comprobar si el correo está confirmado
             if not user_auth.email_confirmed_at and user_auth.confirmed_at is None:
                 return False, "⚠️ Tu correo aún no ha sido verificado. Por favor revisa tu bandeja de entrada para confirmar tu cuenta."
             
-            # Obtener datos adicionales del perfil
             nombre = user_auth.user_metadata.get("nombre", "Usuario")
-            
             lista_vip = [e.lower().strip() for e in ADMIN_EMAILS]
             plan_final = "admin" if email_clean in lista_vip else user_auth.user_metadata.get("plan", "free")
             
             return True, {
-                "id": user_auth.id,
+                "id": str(user_auth.id),
                 "nombre": nombre,
                 "email": user_auth.email,
                 "plan": plan_final
