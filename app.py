@@ -8,7 +8,10 @@ from database import (
     recargar_creditos_usuario,
     crear_preferencia_pago
 )
-from engine import procesar_analisis
+from engine import (
+    procesar_analisis, 
+    transcribir_audio_groq
+)
 
 # Configuración de la página
 st.set_page_config(
@@ -37,6 +40,9 @@ if "user" not in st.session_state:
 
 if "resultado_analisis" not in st.session_state:
     st.session_state.resultado_analisis = None
+
+if "texto_narrativa" not in st.session_state:
+    st.session_state.texto_narrativa = ""
 
 # Capturar pago exitoso y recargar +10 créditos
 query_params = st.query_params
@@ -137,6 +143,7 @@ else:
         if st.button("🚪 Cerrar Sesión"):
             st.session_state.user = None
             st.session_state.resultado_analisis = None
+            st.session_state.texto_narrativa = ""
             st.rerun()
 
     # CONTROL DE LÍMITES Y RECARGA
@@ -161,7 +168,7 @@ else:
             "📂 Mi Historial"
         ])
 
-        # 1. ANALIZADOR CLÍNICO (HABILITADO IMÁGENES Y VOZ)
+        # 1. ANALIZADOR CLÍNICO
         with tabs[0]:
             st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
             col1, col2 = st.columns(2)
@@ -173,31 +180,45 @@ else:
             st.write("---")
             st.write("📷 **1. Cargar Imágenes o Documentos del Motivo de Consulta:**")
             archivo = st.file_uploader(
-                "Sube capturas, fotos de fichas manuscritas, documentos PDF o imágenes de evaluaciones:",
+                "Sube fotos de fichas, capturas, imágenes o PDFs:",
                 type=["pdf", "docx", "txt", "png", "jpg", "jpeg"],
                 key="uploader_1"
             )
 
-            st.write("🎙️ **2. Motivo de Consulta por Voz (Dictado Nivel Nativo del Navegador):**")
-            st.caption("Presiona el icono de micrófono de tu teclado en el cuadro de texto a continuación si estás desde un móvil/laptop, o habla mediante el micrófono de tu sistema.")
-            
-            audio_input = st.audio_input("Grabar notas o dictado de voz directamente:", key="audio_voice_1")
+            st.write("🎙️ **2. Dictar Motivo de Consulta por Voz:**")
+            audio_input = st.audio_input("Grabar notas de voz:", key="audio_voice_1")
+
+            # Si el usuario graba un audio, transcribirlo automáticamente con Whisper
+            if audio_input is not None:
+                audio_bytes = audio_input.getvalue()
+                if st.session_state.get("last_audio_bytes") != audio_bytes:
+                    with st.spinner("Transcribiendo audio de voz a texto..."):
+                        transcripcion = transcribir_audio_groq(audio_input)
+                        if not transcripcion.startswith("Error"):
+                            st.session_state.texto_narrativa = transcripcion
+                            st.session_state["last_audio_bytes"] = audio_bytes
+                            st.success("¡Voz transcrita exitosamente!")
+                        else:
+                            st.error(transcripcion)
 
             instrucciones = st.text_area(
                 "✍️ **3. Narrativa o Transcripción del Motivo de Consulta:**",
+                value=st.session_state.texto_narrativa,
                 placeholder="Escribe o revisa la narrativa transcrita aquí...",
                 key="txt_1"
             )
+            
+            # Actualizar el session_state si el usuario edita a mano el texto
+            st.session_state.texto_narrativa = instrucciones
 
             if st.button("Procesar Análisis Clínico", key="btn_1"):
-                if archivo or instrucciones or audio_input:
-                    with st.spinner("Procesando análisis clínico multiaxial con IA..."):
-                        archivo_a_procesar = archivo if archivo else audio_input
+                if archivo or instrucciones.strip():
+                    with st.spinner("Procesando análisis clínico con IA..."):
                         prompt_completo = f"Edad: {edad}, Etapa: {etapa}. Motivo de Consulta/Narrativa: {instrucciones}"
                         
-                        resultado = procesar_analisis(archivo_a_procesar, prompt_completo)
+                        resultado = procesar_analisis(archivo, prompt_completo)
                         
-                        if resultado:
+                        if resultado and not resultado.startswith("❌"):
                             st.session_state.resultado_analisis = resultado
                             if not es_premium:
                                 nuevas = incrementar_consultas(user["id"])
@@ -205,9 +226,9 @@ else:
                                     st.session_state.user["consultas_usadas"] = nuevas
                                 st.rerun()
                         else:
-                            st.error("Error al procesar la consulta con la API de IA.")
+                            st.error(resultado)
                 else:
-                    st.warning("Por favor ingresa una narrativa, graba audio o suba un archivo/imagen.")
+                    st.warning("Por favor ingresa una narrativa, graba audio o sube un documento/imagen.")
 
             # Mostrar resultado persistente
             if st.session_state.resultado_analisis:
@@ -225,7 +246,7 @@ else:
             if st.button("Buscar Pruebas Recomendadas", key="btn_2"):
                 if consulta_prueba:
                     with st.spinner("Buscando pruebas adecuadas..."):
-                        prompt_prueba = f"Recomienda pruebas psicológicas y psicométricas estandarizadas para evaluar: {consulta_prueba}. Incluye nombre, edad de aplicación y qué mide."
+                        prompt_prueba = f"Recomienda pruebas psicológicas estandarizadas para evaluar: {consulta_prueba}. Incluye nombre, edad de aplicación y qué mide."
                         resultado = procesar_analisis(None, prompt_prueba)
                         if resultado:
                             st.session_state.resultado_analisis = resultado
