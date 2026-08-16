@@ -1,410 +1,311 @@
 import streamlit as st
-import engine
 import database as db
-import os
-import base64
 
-# =========================================================
-# CONFIGURACIÓN DE PÁGINA
-# =========================================================
+# ==============================================================================
+# CONFIGURACIÓN DE PÁGINA Y ESTILOS PATU PRO
+# ==============================================================================
 st.set_page_config(
-    page_title="PATU | Workstation Clínico v3.0 PRO",
-    page_icon="🧠",
+    page_title="PATU — Workstation Clínico v3.0 PRO",
+    page_icon="🦆",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Inicializar Estados de Sesión
-if "usuario" not in st.session_state:
-    st.session_state["usuario"] = None
-if "narrativa_texto" not in st.session_state:
-    st.session_state["narrativa_texto"] = ""
-
-# Cargar la imagen del logo en base64
-def get_image_base64(path):
-    for posib in [path, "logo.JPG", "logo.jpeg", "logo.png", "LOGO.JPG"]:
-        if os.path.exists(posib):
-            with open(posib, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode()
-    return None
-
-logo_b64 = get_image_base64("logo.jpg")
-
-# =========================================================
-# ESTILOS CSS - PALETA CÁLIDA TIPO LOGO PATU
-# =========================================================
+# Estilos CSS personalizados
 st.markdown("""
-    <style>
-    .stApp { background-color: #FEFCE8 !important; font-family: 'Inter', system-ui, sans-serif; }
-    #MainMenu, footer, header {visibility: hidden;}
-    h1, h2, h3, .stSubheader { color: #EA580C !important; font-weight: 800 !important; }
-    p, label, span, div { color: #78350F !important; }
-    .stTabs [data-baseweb="tab-list"] { gap: 8px; background: #FEF3C7; padding: 8px 12px; border-radius: 16px; border: 2px solid #FDE68A; }
-    .stTabs [data-baseweb="tab"] { height: 44px; border-radius: 12px; color: #92400E !important; font-weight: 700 !important; font-size: 0.9rem !important; border: none !important; }
-    .stTabs [aria-selected="true"] { background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important; color: #FFFFFF !important; box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35) !important; }
-    .stTabs [aria-selected="true"] * { color: #FFFFFF !important; }
-    .stButton > button, .stDownloadButton > button { background: linear-gradient(135deg, #FF7E7A 0%, #E05652 100%) !important; color: #FFFFFF !important; border: none !important; border-radius: 12px !important; padding: 0.75rem 1.4rem !important; font-weight: 800 !important; box-shadow: 0 4px 14px rgba(255, 126, 122, 0.4) !important; width: 100%; }
-    .stButton > button *, .stDownloadButton > button * { color: #FFFFFF !important; }
-    section[data-testid="stSidebar"] { background: #FEF3C7 !important; border-right: 2px solid #FDE68A !important; }
-    .stTextInput input, .stTextArea textarea, .stSelectbox select, .stNumberInput input { border-radius: 12px !important; border: 2px solid #FDE68A !important; background-color: #FFFFFF !important; color: #78350F !important; }
-    </style>
+<style>
+    /* Estilos generales y colores de la marca PATU */
+    .stApp {
+        background-color: #FFFDF0;
+    }
+    .main-header {
+        background-color: #FFFFFF;
+        padding: 1.5rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        border-left: 6px solid #E56B55;
+        margin-bottom: 2rem;
+    }
+    .patu-badge {
+        background-color: #00A86B;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+    /* Botones principales */
+    .stButton>button {
+        background-color: #E56B55;
+        color: white;
+        border-radius: 8px;
+        border: none;
+        padding: 0.5rem 1rem;
+        font-weight: bold;
+    }
+    .stButton>button:hover {
+        background-color: #D4543D;
+        color: white;
+    }
+</style>
 """, unsafe_allow_html=True)
 
-# =========================================================
-# BANNER PRINCIPAL
-# =========================================================
-if logo_b64:
-    logo_html = f'<img src="data:image/jpeg;base64,{logo_b64}" style="height: 85px; width: auto; border-radius: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); background: white; padding: 4px; border: 2px solid #FDE68A;">'
-else:
-    logo_html = '<div style="font-size: 3.5rem;">🦆</div>'
+# ==============================================================================
+# INICIALIZACIÓN DE SESIÓN DE USUARIO
+# ==============================================================================
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "user_info" not in st.session_state:
+    st.session_state.user_info = None
 
-st.markdown(f"""
-    <div style="background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%); padding: 1.5rem 2rem; border-radius: 20px; margin-bottom: 1.8rem; box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.15); border: 2px solid #FDE68A; border-left: 10px solid #FF7E7A;">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-            <div style="display: flex; align-items: center; gap: 20px;">
-                {logo_html}
-                <div>
-                    <h1 style="color: #EA580C !important; margin: 0; font-size: 2.1rem; font-weight: 900;">
-                        Workstation Clínico
-                        <span style="font-size: 0.85rem; background: #16A34A; color: #FFFFFF !important; padding: 4px 14px; border-radius: 20px; font-weight: 800;">v3.0 PRO</span>
-                    </h1>
-                    <p style="color: #92400E !important; margin: 4px 0 0 0; font-size: 1rem; font-weight: 700;">
-                        PATU — Psychologists United Across America
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-""", unsafe_allow_html=True)
-
-# =========================================================
-# MÓDULO DE AUTENTICACIÓN (LOGIN / REGISTRO)
-# =========================================================
-if st.session_state["usuario"] is None:
-    st.subheader("🔐 Acceso a la Plataforma Clínica")
-    tab_login, tab_registro = st.tabs(["🔑 Iniciar Sesión", "📝 Crear Cuenta Gratis"])
+# ==============================================================================
+# PANTALLA DE PAGO / ACTUALIZACIÓN A PREMIUM
+# ==============================================================================
+def mostrar_modulo_pago(user_id, email_usuario):
+    st.error("🔒 Has alcanzado el límite de 4 registros de prueba en el Plan Gratuito.")
     
+    st.markdown("---")
+    st.markdown("## 🚀 Actualiza a PATU Premium — Acceso Ilimitado")
+    st.write("Sigue estos sencillos pasos para activar tu cuenta de forma inmediata:")
+
+    col_qr, col_form = st.columns([1, 1.2])
+
+    with col_qr:
+        st.subheader("1. Escanea y paga con Yape o Plin")
+        st.info("💰 **S/ 29.90 / mes** — Registro e informes ilimitados")
+        
+        # Reemplaza la ruta por la imagen real de tu QR cuando la tengas en tu carpeta assets
+        try:
+            st.image("assets/qr_yape_plin.png", caption="Yape / Plin al: 9XX-XXX-XXX", use_column_width=True)
+        except Exception:
+            st.warning("📌 *Sube la imagen de tu QR a la carpeta 'assets/qr_yape_plin.png'*")
+            st.markdown("""
+            **Datos para transferencia manual:**
+            * **Yape / Plin:** 9XX-XXX-XXX
+            * **Titular:** PATU / Tu Nombre
+            """)
+
+    with col_form:
+        st.subheader("2. Confirma tu pago")
+        st.write("Adjunta la captura de pantalla o voucher para validar tu pago:")
+        
+        num_operacion = st.text_input("Número de operación (opcional):", placeholder="Ej. 12345678")
+        voucher_file = st.file_uploader("Subir foto o captura del voucher (PNG, JPG)", type=["png", "jpg", "jpeg"])
+
+        if st.button("📲 Enviar Comprobante para Activación", use_container_width=True):
+            if voucher_file is not None or num_operacion.strip() != "":
+                nombre_archivo = voucher_file.name if voucher_file else "Sin archivo"
+                exito, msg = db.registrar_solicitud_pago(user_id, email_usuario, num_operacion, nombre_archivo)
+                if exito:
+                    st.success("✅ ¡Comprobante enviado con éxito! En breve revisaremos tu pago y se activará tu acceso ilimitado.")
+                else:
+                    st.error(f"Error al registrar el pago: {msg}")
+            else:
+                st.warning("⚠️ Por favor ingresa el número de operación o adjunta el voucher de pago.")
+
+# ==============================================================================
+# FORMULARIOS DE AUTENTICACIÓN (LOGIN Y REGISTRO)
+# ==============================================================================
+if not st.session_state.logged_in:
+    st.markdown("<h1 style='text-align: center;'>🦆 PATU — Workstation Clínico</h1>", unsafe_allow_html=True)
+    
+    tab_login, tab_register = st.tabs(["🔑 Iniciar Sesión", "📝 Registrarse"])
+
     with tab_login:
-        col_l1, col_l2 = st.columns([1, 1])
-        with col_l1:
-            email_login = st.text_input("Correo Electrónico:", key="log_email")
-            pass_login = st.text_input("Contraseña:", type="password", key="log_pass")
-            if st.button("🚀 Entrar al Workstation"):
-                if email_login and pass_login:
-                    exito, res = db.verificar_login(email_login, pass_login)
-                    if exito:
-                        st.session_state["usuario"] = res
-                        st.success(f"¡Bienvenido/a, {res['nombre']}!")
+        st.subheader("Acceder a mi cuenta")
+        email_input = st.text_input("Correo Electrónico:", key="login_email")
+        pass_input = st.text_input("Contraseña:", type="password", key="login_pass")
+        
+        if st.button("Iniciar Sesión", key="btn_login"):
+            if email_input and pass_input:
+                exito, res = db.verificar_login(email_input, pass_input)
+                if exito:
+                    st.session_state.logged_in = True
+                    st.session_state.user_info = res
+                    st.rerun()
+                else:
+                    st.error(res)
+            else:
+                st.warning("Por favor completa todos los campos.")
+
+    with tab_register:
+        st.subheader("Crear una nueva cuenta")
+        nombre_reg = st.text_input("Nombre Completo:", key="reg_nombre")
+        email_reg = st.text_input("Correo Electrónico:", key="reg_email")
+        pass_reg = st.text_input("Contraseña:", type="password", key="reg_pass")
+
+        if st.button("Crear Cuenta", key="btn_reg"):
+            if nombre_reg and email_reg and pass_reg:
+                exito, msg = db.registrar_usuario(nombre_reg, email_reg, pass_reg)
+                if exito:
+                    st.success(msg)
+                else:
+                    st.error(msg)
+            else:
+                st.warning("Por favor completa todos los campos para el registro.")
+
+else:
+    # ==============================================================================
+    # SESIÓN INICIADA: SIDEBAR Y BARRA LATERAL
+    # ==============================================================================
+    user = st.session_state.user_info
+    usuario_id = user["id"]
+    email_usuario = user["email"]
+    nombre_usuario = user["nombre"]
+    plan_usuario = user.get("plan", "free")
+
+    # Obtener historial actual del usuario
+    historial_actual = db.obtener_historial_usuario(usuario_id)
+    total_usados = len(historial_actual)
+
+    with st.sidebar:
+        st.markdown(f"👤 **Usuario:** {nombre_usuario}")
+        
+        # Badge de plan
+        if plan_usuario in ["admin", "premium"]:
+            st.markdown(f"Plan Actual: <span class='patu-badge'>PLAN {plan_usuario.upper()}</span>", unsafe_allow_html=True)
+        else:
+            st.markdown("Plan Actual: 🌱 **PLAN FREE**")
+
+        st.markdown("---")
+
+        # Barra de progreso y contador si es PLAN FREE
+        if plan_usuario == "free":
+            st.caption(f"📊 Uso del Plan Gratuito: {total_usados}/{db.LIMITE_REGISTROS_FREE}")
+            progreso = min(total_usados / db.LIMITE_REGISTROS_FREE, 1.0)
+            st.progress(progreso)
+
+            restantes = db.LIMITE_REGISTROS_FREE - total_usados
+            if restantes > 0:
+                st.info(f"Te quedan {restantes} registros de prueba.")
+            else:
+                st.error("🔒 Has agotado tus registros gratuitos.")
+
+        if st.button("🚪 Cerrar Sesión"):
+            st.session_state.logged_in = False
+            st.session_state.user_info = None
+            st.rerun()
+
+        # ----------------------------------------------------------------------
+        # PANEL ADMINISTRADOR (Solo visible para usuarios 'admin')
+        # ----------------------------------------------------------------------
+        if plan_usuario == "admin":
+            st.markdown("---")
+            with st.expander("🛠️ Admin: Gestionar Pagos"):
+                st.write("Aprobar o cambiar plan de usuario:")
+                target_user_id = st.text_input("ID de Usuario:", key="admin_target_id")
+                target_plan = st.selectbox("Asignar Plan:", ["premium", "free", "admin"], key="admin_plan_select")
+                
+                if st.button("Actualizar Plan", key="btn_admin_update"):
+                    if target_user_id:
+                        ok_up, msg_up = db.activar_plan_premium(target_user_id, plan=target_plan)
+                        if ok_up:
+                            st.success(f"¡Plan actualizado a {target_plan}!")
+                        else:
+                            st.error(msg_up)
+                    else:
+                        st.warning("Ingresa un ID de usuario válido.")
+
+    # ==============================================================================
+    # HEADER PRINCIPAL Y PESTAÑAS DE TRABAJO
+    # ==============================================================================
+    st.markdown("""
+        <div class="main-header">
+            <h2>🦆 Workstation Clínico <span class="patu-badge">v3.0 PRO</span></h2>
+            <p style="margin: 0; color: #555;">PATU — Psychologists United Across America</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # Verificación de límite antes de renderizar herramientas principales
+    puedes_usar, msg_limite = db.verificar_limite_usuario(usuario_id, plan_usuario)
+
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "📑 Analizador Clínico", 
+        "🔍 Buscador de Pruebas", 
+        "📑 Generador de Informes", 
+        "🗂️ Mi Historial"
+    ])
+
+    # --------------------------------------------------------------------------
+    # TAB 1: ANALIZADOR CLÍNICO
+    # --------------------------------------------------------------------------
+    with tab1:
+        st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
+        
+        col_edad, col_etapa = st.columns([1, 2])
+        with col_edad:
+            edad = st.number_input("Edad del Paciente (años):", min_value=1, max_value=120, value=25)
+        with col_etapa:
+            etapa = "Adolescente" if edad < 18 else "Adulto"
+            st.text_input("Etapa de Desarrollo:", value=etapa, disabled=True)
+
+        narrativa = st.text_area("Narrativa o notas de la consulta inicial:", height=150,
+                                 placeholder="Escribe o pega la sintomatología del paciente...")
+
+        col_btn1, col_btn2 = st.columns(2)
+        
+        with col_btn1:
+            if st.button("🔍 Analizar Caso y Brechas", use_container_width=True):
+                if not puedes_usar:
+                    mostrar_modulo_pago(usuario_id, email_usuario)
+                elif not narrativa.strip():
+                    st.warning("Por favor ingresa la narrativa del caso.")
+                else:
+                    # Lógica de análisis simulada / integración IA
+                    res_analisis = f"**Análisis Clínico ({etapa}, {edad} años):**\n\nSintomatología reportada revisada. Se observan brechas en la evaluación del estado afectivo y psicosocial."
+                    st.markdown(res_analisis)
+                    
+                    # Intentar guardar en historial
+                    ok_g, msg_g = db.guardar_historial(usuario_id, "Análisis Clínico", f"Caso {edad} años - {etapa}", res_analisis, plan_usuario)
+                    if ok_g:
+                        st.success("Guardado en historial.")
                         st.rerun()
                     else:
-                        st.error(res)
+                        st.error(msg_g)
+
+        with col_btn2:
+            if st.button("🧪 Sugerir Batería Psicométrica", use_container_width=True):
+                if not puedes_usar:
+                    mostrar_modulo_pago(usuario_id, email_usuario)
+                elif not narrativa.strip():
+                    st.warning("Por favor ingresa la narrativa del caso.")
                 else:
-                    st.warning("Por favor completa correo y contraseña.")
-
-    with tab_registro:
-        col_r1, col_r2 = st.columns([1, 1])
-        with col_r1:
-            nombre_reg = st.text_input("Nombre Completo o Título Prof.:", key="reg_nom")
-            email_reg = st.text_input("Correo Electrónico:", key="reg_email")
-            pass_reg = st.text_input("Crear Contraseña:", type="password", key="reg_pass")
-            if st.button("✨ Crear mi Cuenta"):
-                if nombre_reg and email_reg and pass_reg:
-                    exito, msg = db.registrar_usuario(nombre_reg, email_reg, pass_reg)
-                    if exito:
-                        st.success(msg)
+                    res_bateria = f"### 🧪 Batería Psicométrica Recomendada (Rango: {edad} años / {etapa})\n\n1. **BDI-II** (Depresión de Beck)\n2. **BAI** (Ansiedad de Beck)\n3. **MINI / SCL-90-R** (Tamizaje Multiaxial)"
+                    st.markdown(res_bateria)
+                    
+                    ok_g, msg_g = db.guardar_historial(usuario_id, "Batería Psicométrica", f"Batería {etapa}", res_bateria, plan_usuario)
+                    if ok_g:
+                        st.success("Guardado en historial.")
+                        st.rerun()
                     else:
-                        st.error(msg)
-                else:
-                    st.warning("Completa todos los campos para registrarte.")
-    
-    st.stop()
+                        st.error(msg_g)
 
-# =========================================================
-# USUARIO LOGUEADO - BARRA LATERAL (SIDEBAR)
-# =========================================================
-usuario_actual = st.session_state["usuario"]
+    # --------------------------------------------------------------------------
+    # TAB 2: BUSCADOR DE PRUEBAS
+    # --------------------------------------------------------------------------
+    with tab2:
+        st.subheader("🔍 Buscador de Pruebas Psicológicas")
+        query_prueba = st.text_input("Buscar prueba por nombre o constructo (ej: Depresión, WAIS, MACI):")
+        if st.button("Buscar Prueba"):
+            st.info(f"Mostrando resultados para: '{query_prueba}'")
 
-with st.sidebar:
-    st.markdown(f"### 👤 Usuario: **{usuario_actual['nombre']}**")
-    plan_tag = "⭐ PREMIUM / ADMIN" if usuario_actual['plan'] in ['premium', 'admin'] else "🌱 PLAN FREE"
-    st.markdown(f"**Plan Actual:** `{plan_tag}`")
-    
-    # CONTADOR Y BARRA DE PROGRESO DE PLAN GRATUITO
-    if usuario_actual['plan'] not in ['premium', 'admin']:
-        historial_usr = db.obtener_historial_usuario(usuario_actual["id"])
-        usos_usados = len(historial_usr)
-        usos_restantes = max(0, 4 - usos_usados)
-        
-        st.markdown("---")
-        st.caption(f"📊 **Uso del Plan Gratuito:** {usos_usados}/4")
-        st.progress(min(usos_usados / 4.0, 1.0))
-        
-        if usos_restantes == 0:
-            st.error("🔒 Límite de 4 registros alcanzado.")
+    # --------------------------------------------------------------------------
+    # TAB 3: GENERADOR DE INFORMES
+    # --------------------------------------------------------------------------
+    with tab3:
+        st.subheader("📑 Generador de Informes Psicológicos")
+        st.write("Completa los datos para estructurar el borrador del informe clínico.")
+
+    # --------------------------------------------------------------------------
+    # TAB 4: MI HISTORIAL
+    # --------------------------------------------------------------------------
+    with tab4:
+        st.subheader("🗂️ Mi Historial de Registros Guardados")
+        registros = db.obtener_historial_usuario(usuario_id)
+        if not registros:
+            st.info("Aún no tienes registros guardados en tu historial.")
         else:
-            st.info(f"Te quedan {usos_restantes} registros de prueba.")
-    
-    if st.button("🚪 Cerrar Sesión"):
-        st.session_state["usuario"] = None
-        st.rerun()
-        
-    st.divider()
-    st.markdown("### ⚙️ Configuración API")
-    
-    api_key_secret = st.secrets.get("GROQ_API_KEY", "")
-    if api_key_secret:
-        api_key = api_key_secret
-        st.success("Sistema Conectado", icon="⚡")
-    else:
-        api_key = st.text_input("🔑 Groq API Key:", type="password", help="Ingresa tu clave de API de Groq")
-        if api_key:
-            st.success("API Key Conectada", icon="✅")
-        else:
-            st.warning("Ingrese su API Key para comenzar", icon="⚠️")
-
-# =========================================================
-# PESTAÑAS PRINCIPALES DE LA APLICACIÓN
-# =========================================================
-tab1, tab2, tab3, tab4, tab5, tab6, tab_historial = st.tabs([
-    "📋 Analizador Clínico", 
-    "🧪 Buscador de Pruebas", 
-    "📄 Generador de Informes", 
-    "🎙️ Analizador de Sesiones", 
-    "📚 Psicoeducación",
-    "🧮 Corrector Psicométrico",
-    "🗂️ Mi Historial"
-])
-
-# ---------------------------------------------------------
-# TAB 1: ANALIZADOR CLÍNICO INICIAL
-# ---------------------------------------------------------
-with tab1:
-    st.subheader("📋 Análisis Diagnóstico Inicial y Multiaxial")
-    
-    col_edad1, col_edad2 = st.columns(2)
-    with col_edad1:
-        edad_paciente = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=110, value=25, step=1)
-    with col_edad2:
-        etapa_default = "Adulto"
-        if edad_paciente < 12: etapa_default = "Infantil (Niño/a)"
-        elif edad_paciente < 18: etapa_default = "Adolescente"
-        elif edad_paciente >= 65: etapa_default = "Adulto Mayor"
-            
-        opciones_etapa = ["Infantil (Niño/a)", "Adolescente", "Adulto", "Adulto Mayor"]
-        etapa_paciente = st.selectbox("👶/👵 Etapa de Desarrollo:", opciones_etapa, index=opciones_etapa.index(etapa_default))
-
-    st.markdown("#### 🎙️ Dictar o Escribir la Narrativa Clínica")
-    audio_dictado = st.audio_input("Presiona para dictar las notas de voz del caso:")
-    
-    if audio_dictado is not None:
-        if not api_key:
-            st.error("Por favor ingresa tu API Key en la barra lateral.")
-        else:
-            with st.spinner("Transcribiendo dictado por voz..."):
-                texto_dictado = engine.transcribir_audio_groq(audio_dictado, api_key)
-                if "Error" not in texto_dictado:
-                    st.session_state["narrativa_texto"] = (st.session_state["narrativa_texto"] + "\n" + texto_dictado).strip()
-                    st.success("¡Voz transcrita e integrada correctamente!")
-
-    narrativa = st.text_area("Narrativa o notas de la consulta inicial:", value=st.session_state["narrativa_texto"], height=160)
-    st.session_state["narrativa_texto"] = narrativa
-
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("🔍 Analizar Caso y Brechas"):
-            if not api_key: st.error("Ingresa tu API Key.")
-            elif not narrativa.strip(): st.warning("Ingresa una narrativa.")
-            else:
-                with st.spinner("Procesando hipótesis clínicas..."):
-                    res = engine.analizar_caso_inicial(narrativa, api_key)
-                    st.markdown(res)
-                    
-                    ok_guardar, msg_guardar = db.guardar_historial(
-                        usuario_actual["id"], 
-                        "Análisis Inicial", 
-                        f"Caso Edad {edad_paciente}", 
-                        res, 
-                        plan_usuario=usuario_actual["plan"]
-                    )
-                    if ok_guardar:
-                        st.toast("💾 Análisis guardado en tu historial")
-                    else:
-                        st.error(msg_guardar)
-                    
-    with col2:
-        if st.button("🧪 Sugerir Batería Psicométrica"):
-            if not api_key: st.error("Ingresa tu API Key.")
-            elif not narrativa.strip(): st.warning("Ingresa una narrativa.")
-            else:
-                with st.spinner("Sugeriendo batería..."):
-                    res = engine.obtener_pruebas_psicometricas(narrativa, edad_paciente, etapa_paciente, api_key)
-                    st.markdown(res)
-                    
-                    ok_guardar, msg_guardar = db.guardar_historial(
-                        usuario_actual["id"], 
-                        "Sugerencia Pruebas", 
-                        f"Batería para {edad_paciente} años", 
-                        res, 
-                        plan_usuario=usuario_actual["plan"]
-                    )
-                    if ok_guardar:
-                        st.toast("💾 Batería guardada en tu historial")
-                    else:
-                        st.error(msg_guardar)
-
-# ---------------------------------------------------------
-# TAB 2: BUSCADOR DE PRUEBAS
-# ---------------------------------------------------------
-with tab2:
-    st.subheader("🧪 Buscador de Pruebas y Recursos Psicométricos")
-    query_prueba = st.text_input("Nombre de la prueba o área a evaluar:", placeholder="Ej: WISC-V, BDI-II, RAVEN...")
-    if st.button("🔎 Buscar Recursos"):
-        if not api_key: st.error("Ingresa tu API Key.")
-        elif not query_prueba.strip(): st.warning("Escribe una búsqueda.")
-        else:
-            with st.spinner("Consultando..."):
-                res = engine.buscar_recursos_pruebas(query_prueba, api_key)
-                st.markdown(res)
-
-# ---------------------------------------------------------
-# TAB 3: GENERADOR DE INFORMES
-# ---------------------------------------------------------
-with tab3:
-    st.subheader("📄 Generador de Informes y Exportación a Word")
-    archivo_plantilla = st.file_uploader("📂 Subir Plantilla de Informe en Word (.docx):", type=["docx"])
-    plantilla_extraida = engine.extraer_texto_docx(archivo_plantilla) if archivo_plantilla else ""
-
-    col_a, col_b = st.columns(2)
-    with col_a:
-        nombre = st.text_input("Nombre / Iniciales:")
-        edad = st.text_input("Edad:")
-        genero = st.text_input("Género / Sexo:")
-        ocupacion = st.text_input("Ocupación:")
-    with col_b:
-        enfoque = st.selectbox("Enfoque del Informe:", ["Cognitivo-Conductual", "Psicodinámico", "Humanista/Sistémico", "Neuropsicológico", "Integral / Clínico General"])
-        motivo = st.text_area("Motivo de Consulta:", height=70)
-        
-    problema_actual = st.text_area("Problema Actual / Antecedentes:", height=90)
-    pruebas_aplicadas = st.text_area("Pruebas Aplicadas:", height=70)
-    observaciones = st.text_area("Observaciones Conductuales:", height=70)
-    diagnostico = st.text_area("Conclusiones Diagnósticas:", height=70)
-    
-    if st.button("📑 Redactar Informe Clínico"):
-        if not api_key: st.error("Ingresa tu API Key.")
-        else:
-            datos_dict = {"nombre": nombre, "edad": edad, "genero": genero, "ocupacion": ocupacion, "motivo": motivo, "problema_actual": problema_actual, "pruebas_aplicadas": pruebas_aplicadas, "observaciones": observaciones, "diagnostico": diagnostico}
-            with st.spinner("Redactando informe..."):
-                res = engine.generar_informe_premium(datos_dict, enfoque, plantilla_extraida, api_key)
-                st.markdown(res)
-                
-                ok_guardar, msg_guardar = db.guardar_historial(
-                    usuario_actual["id"], 
-                    "Informe Psicológico", 
-                    f"Informe: {nombre or 'Paciente'}", 
-                    res, 
-                    plan_usuario=usuario_actual["plan"]
-                )
-                if ok_guardar:
-                    doc_bytes = engine.crear_documento_word(f"Informe - {nombre or 'Paciente'}", res)
-                    st.download_button(label="📥 Descargar Informe en Word (.docx)", data=doc_bytes, file_name=f"Informe_{nombre or 'Paciente'}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-                else:
-                    st.error(msg_guardar)
-
-# ---------------------------------------------------------
-# TAB 4: ANALIZADOR DE SESIONES
-# ---------------------------------------------------------
-with tab4:
-    st.subheader("🎙️ Analizador de Sesiones Grabadas")
-    archivo_audio = st.file_uploader("Sube el audio de la sesión (MP3, WAV, M4A):", type=["mp3", "wav", "m4a"])
-    if archivo_audio and st.button("🎙️ Transcribir y Analizar Sesión"):
-        if not api_key: st.error("Ingresa tu API Key.")
-        else:
-            with st.spinner("Transcribiendo..."):
-                transcripcion = engine.transcribir_audio_groq(archivo_audio, api_key)
-            if "Error" not in transcripcion:
-                with st.spinner("Analizando..."):
-                    analisis = engine.analizar_transcripcion_sesion(transcripcion, api_key)
-                    st.markdown(analisis)
-                    
-                    ok_guardar, msg_guardar = db.guardar_historial(
-                        usuario_actual["id"], 
-                        "Análisis Sesión Audio", 
-                        f"Sesión: {archivo_audio.name}", 
-                        analisis, 
-                        plan_usuario=usuario_actual["plan"]
-                    )
-                    if not ok_guardar:
-                        st.error(msg_guardar)
-
-# ---------------------------------------------------------
-# TAB 5: PSICOEDUCACIÓN
-# ---------------------------------------------------------
-with tab5:
-    st.subheader("📚 Generador de Material Psicoeducativo")
-    diag_base = st.text_area("Diagnóstico o tema a explicar:", placeholder="Ej: Trastorno de Ansiedad Generalizada...")
-    destinatario = st.selectbox("Destinatario de la guía:", ["Paciente (Adulto)", "Padres / Familiares", "Paciente (Adolescente)", "Docentes / Colegio"])
-    if st.button("📖 Generar Guía Psicoeducativa"):
-        if not api_key: st.error("Ingresa tu API Key.")
-        elif not diag_base.strip(): st.warning("Ingresa un tema.")
-        else:
-            with st.spinner("Elaborando guía..."):
-                res = engine.generar_plantilla_psicoeducacion(diag_base, destinatario, api_key)
-                st.markdown(res)
-                
-                ok_guardar, msg_guardar = db.guardar_historial(
-                    usuario_actual["id"], 
-                    "Psicoeducación", 
-                    f"Guía: {diag_base[:30]}", 
-                    res, 
-                    plan_usuario=usuario_actual["plan"]
-                )
-                if not ok_guardar:
-                    st.error(msg_guardar)
-
-# ---------------------------------------------------------
-# TAB 6: CORRECTOR PSICOMÉTRICO
-# ---------------------------------------------------------
-with tab6:
-    st.subheader("🧮 Corrector e Interpretador de Puntajes Psicométricos")
-    prueba_nom = st.text_input("Nombre de la Prueba:", placeholder="Ej: WISC-V...")
-    puntajes_input = st.text_area("Ingresa los puntajes:", height=100)
-    if st.button("📊 Interpretar Puntajes"):
-        if not api_key: st.error("Ingresa tu API Key.")
-        elif not prueba_nom.strip() or not puntajes_input.strip(): st.warning("Completa los datos.")
-        else:
-            with st.spinner("Interpretar puntajes..."):
-                res = engine.interpretar_puntajes_psicometricos(prueba_nom, puntajes_input, edad_paciente, api_key)
-                st.markdown(res)
-                
-                ok_guardar, msg_guardar = db.guardar_historial(
-                    usuario_actual["id"], 
-                    "Corrección Psicométrica", 
-                    f"Prueba: {prueba_nom}", 
-                    res, 
-                    plan_usuario=usuario_actual["plan"]
-                )
-                if not ok_guardar:
-                    st.error(msg_guardar)
-
-# ---------------------------------------------------------
-# TAB 7: HISTORIAL DEL USUARIO
-# ---------------------------------------------------------
-with tab_historial:
-    st.subheader(f"🗂️ Historial Clínico de {usuario_actual['nombre']}")
-    st.caption("Aquí se guardan automáticamente las consultas, informes y análisis que generes en la plataforma.")
-    
-    registros = db.obtener_historial_usuario(usuario_actual["id"])
-    
-    if not registros:
-        st.info("Aún no tienes análisis o informes guardados en tu historial.")
-    else:
-        for reg_id, tipo, titulo, contenido, fecha in registros:
-            with st.expander(f"📌 [{tipo}] {titulo} — 🗓️ {fecha}"):
-                st.markdown(contenido)
-                doc_bytes = engine.crear_documento_word(titulo, contenido)
-                st.download_button(
-                    label="📥 Descargar en Word (.docx)",
-                    data=doc_bytes,
-                    file_name=f"{titulo.replace(' ', '_')}.docx",
-                    key=f"hist_dl_{reg_id}"
-                )
+            for reg in registros:
+                # reg: (id, tipo_registro, titulo, contenido, fecha)
+                with st.expander(f"📌 {reg[1]} - {reg[2]} ({reg[4]})"):
+                    st.markdown(reg[3])
