@@ -92,14 +92,14 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
 
 
 def analizar_caso_inicial(narrativa_completa, api_key=None):
-    """Analiza el caso clínico devolviendo evaluación multiaxial, códigos, brechas y pruebas recomendadas."""
+    """Analiza el caso clínico devolviendo diagnóstico multiaxial, diferenciales, brechas y pruebas."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     prompt = f"""
-    Eres un psicólogo clínico senior y experto en psicodiagnóstico. Analiza detalladamente el siguiente caso clínico y redacta una evaluación clínica estructurada obligatoriamente en las siguientes secciones exactas:
+    Eres un psicólogo clínico senior y experto en psicodiagnóstico. Analiza detalladamente el siguiente caso clínico y redacta una evaluación estructurada obligatoriamente en las siguientes secciones exactas:
 
     ### 1. Resumen Sintomático Principal
     (Síntesis cualitativa de la clínica expresada, afecto, conducta y pensamiento)
@@ -110,15 +110,18 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
     ### 3. Preguntas Sugeridas para la Siguiente Consulta
     (Listado de preguntas clínicas clave para profundizar)
 
-    ### 4. Evaluación Diagnóstica y Formulación Multiaxial (DSM-5 / CIE-10 / CIE-11)
-    - **Eje I / Trastornos Clínicos:** (Incluir nombre exacto y códigos DSM-5 y CIE-10/CIE-11)
-    - **Eje II / Trastornos de la Personalidad y Desarrollo:** (Incluir diagnósticos o rasgos con códigos)
-    - **Eje III / Condiciones Médicas Generales:** (Enfermedades físicas o hallazgos somáticos)
-    - **Eje IV / Problemas Psicosociales y Ambientales:** (Factores de estrés, red de apoyo, estresores)
-    - **Eje V / Evaluación de la Actividad Global (GAF/EEAG):** (Estimación del nivel de funcionamiento actual)
+    ### 4. Evaluación Diagnóstica Principal y Formulación Multiaxial (DSM-5 / CIE-10 / CIE-11)
+    - **Eje I / Trastornos Clínicos:** (Nombre exacto y códigos DSM-5 / CIE-10 / CIE-11)
+    - **Eje II / Trastornos de la Personalidad y Desarrollo:** (Diagnósticos o rasgos)
+    - **Eje III / Condiciones Médicas Generales:** (Hallazgos somáticos o enfermedades)
+    - **Eje IV / Problemas Psicosociales y Ambientales:** (Factores de estrés o red de apoyo)
+    - **Eje V / Evaluación de la Actividad Global (GAF/EEAG):** (Puntaje o nivel de funcionamiento)
 
-    ### 5. Batería de Pruebas Psicométricas Sugeridas
-    (Listado de tests e inventarios normados recomendados para confirmar la hipótesis, indicando qué evalúa cada uno y por qué se aplica a este caso)
+    ### 5. Diagnósticos Diferenciales y Posibles Trastornos a Descartar
+    (Lista de posibles trastornos alternativos o comorbilidades a considerar con su respectiva justificación clínica)
+
+    ### 6. Batería de Pruebas Psicométricas Sugeridas
+    (Tests e inventarios normados recomendados indicando qué evalúan y por qué se aplican a este caso específico)
 
     CASO CLÍNICO:
     "{narrativa_completa}"
@@ -337,7 +340,7 @@ def procesar_analisis(archivo, instrucciones):
         nombre = getattr(archivo, 'name', '').lower() if archivo else ""
 
         if nombre.endswith(('.png', '.jpg', '.jpeg', '.webp')):
-            prompt_vis = f"{instrucciones}. Incluye Formulación Multiaxial DSM-5/CIE-10/CIE-11 con códigos y Pruebas Psicométricas Sugeridas."
+            prompt_vis = f"{instrucciones}. Incluye Formulación Multiaxial DSM-5/CIE-10/CIE-11 con códigos, Diagnósticos Diferenciales y Pruebas Psicométricas Sugeridas."
             return analizar_imagen_clinica(archivo, prompt_vis, api_key)
 
         if nombre.endswith('.docx'):
@@ -364,7 +367,8 @@ def procesar_analisis(archivo, instrucciones):
         2. Brechas de Información.
         3. Preguntas para la Siguiente Consulta.
         4. Evaluación Multiaxial DSM-5 / CIE-10 / CIE-11 (Ejes I al V con códigos diagnósticos).
-        5. Batería de Pruebas Psicométricas Recomendadas.
+        5. Diagnósticos Diferenciales y Posibles Trastornos a Descartar.
+        6. Batería de Pruebas Psicométricas Recomendadas.
         """
         
         response = client.chat.completions.create(
