@@ -52,21 +52,22 @@ def registrar_usuario(nombre, email, password):
 def verificar_login(email, password):
     """
     Valida las credenciales de acceso del usuario.
+    Devuelve: (exito: bool, usuario: dict/None, mensaje: str)
     """
     try:
         res = supabase.table("usuarios").select("*").eq("email", email).execute()
         if not res.data:
-            return None, "Usuario no encontrado."
+            return False, None, "Usuario no encontrado."
 
         usuario = res.data[0]
         stored_hash = usuario.get("password_hash")
 
         if stored_hash and bcrypt.checkpw(password.encode('utf-8'), stored_hash.encode('utf-8')):
-            return usuario, "Inicio de sesión exitoso."
+            return True, usuario, "Inicio de sesión exitoso."
         else:
-            return None, "Contraseña incorrecta."
+            return False, None, "Contraseña incorrecta."
     except Exception as e:
-        return None, f"Error en la verificación: {str(e)}"
+        return False, None, f"Error en la verificación: {str(e)}"
 
 
 def obtener_usuario_por_id(user_id):
@@ -125,7 +126,7 @@ def crear_preferencia_pago(user_id, email):
                     "title": "PATU Workstation - Suscripción Premium / Recarga",
                     "quantity": 1,
                     "unit_price": 29.90,  # Monto en la moneda configurada en tu cuenta
-                    "currency_id": "PEN"   # Ajusta a tu moneda si es necesario (ej. PEN, ARS, MXN)
+                    "currency_id": "PEN"   # Moneda (PEN, ARS, MXN, USD)
                 }
             ],
             "payer": {
@@ -143,7 +144,7 @@ def crear_preferencia_pago(user_id, email):
         preference_response = sdk.preference().create(preference_data)
         preference = preference_response["response"]
         
-        # Devuelve el link de checkout
+        # Devuelve el link de checkout de Mercado Pago
         return preference.get("init_point"), "Preferencia creada correctamente."
     except Exception as e:
         return None, f"Error al generar la preferencia de pago: {str(e)}"
