@@ -148,7 +148,7 @@ def crear_preferencia_pago(user_id, email):
                 {
                     "title": "PATU Workstation - Suscripción Premium / Recarga",
                     "quantity": 1,
-                    "unit_price": 29.90,
+                    "unit_price": 2.00,
                     "currency_id": "PEN"
                 }
             ],
