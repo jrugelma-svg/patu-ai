@@ -25,23 +25,94 @@ from engine import (
 
 # Configuración de la página
 st.set_page_config(
-    page_title="PATU - Workstation Clínico",
-    page_icon="🦆",
+    page_title="PATU AI - Workstation Clínico",
+    page_icon="🐾",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Estilos CSS
+# Estilos CSS con la paleta pastel inspirada en el logo de Patu AI
 st.markdown("""
     <style>
-    .stApp { background-color: #FFFDF0 !important; color: #5C3A21 !important; }
-    section[data-testid="stSidebar"] { background-color: #FFF9D6 !important; border-right: 1px solid #E6DFB8 !important; }
-    h1, h2, h3, h4, label, p, span, div { color: #5C3A21 !important; }
-    div.stButton > button { background-color: #2D6A4F !important; color: #FFFFFF !important; border-radius: 8px !important; border: none !important; font-weight: bold !important; }
-    .stTextInput input, .stTextArea textarea, .stSelectbox select { background-color: #FFFFFF !important; color: #5C3A21 !important; border: 1px solid #E2D9B7 !important; border-radius: 8px !important; }
-    .badge-pro { background-color: #00A86B; color: white !important; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; display: inline-block; }
-    .caja-pruebas { background-color: #EAE5D9; padding: 12px; border-radius: 10px; text-align: center; font-weight: 500; color: #5C3A21; margin-top: 10px; margin-bottom: 15px; }
-    .resultado-ia { background-color: #FFFFFF; padding: 22px; border-radius: 12px; border: 1px solid #E2D9B7; margin-top: 15px; box-shadow: 0px 4px 10px rgba(0,0,0,0.03); }
+    /* Fondo general suave crema-malva */
+    .stApp { 
+        background-color: #F8F5FB !important; 
+        color: #5C4A72 !important; 
+    }
+    
+    /* Barra lateral */
+    section[data-testid="stSidebar"] { 
+        background-color: #F0EBFC !important; 
+        border-right: 1px solid #E0D3F5 !important; 
+    }
+    
+    /* Textos generales y etiquetas */
+    h1, h2, h3, h4, label, p, span, div { 
+        color: #5C4A72 !important; 
+    }
+    
+    /* Títulos principales */
+    h1, h2, h3 {
+        color: #8259BF !important;
+        font-weight: 700 !important;
+    }
+    
+    /* Botones principales en Azul Lavanda */
+    div.stButton > button { 
+        background-color: #8B93FF !important; 
+        color: #FFFFFF !important; 
+        border-radius: 12px !important; 
+        border: none !important; 
+        font-weight: bold !important; 
+        box-shadow: 0 4px 10px rgba(139, 147, 255, 0.25) !important;
+        transition: all 0.3s ease !important;
+    }
+    
+    /* Efecto al pasar el cursor por los botones (Rosa Chicle) */
+    div.stButton > button:hover {
+        background-color: #FF94C2 !important;
+        color: #FFFFFF !important;
+    }
+    
+    /* Cajas de texto e insumos sobre blanco limpio */
+    .stTextInput input, .stTextArea textarea, .stSelectbox select { 
+        background-color: #FFFFFF !important; 
+        color: #5C4A72 !important; 
+        border: 1px solid #E0D3F5 !important; 
+        border-radius: 10px !important; 
+    }
+    
+    /* Badges y tarjetas destacadas */
+    .badge-pro { 
+        background-color: #8259BF; 
+        color: #FFFFFF !important; 
+        padding: 4px 12px; 
+        border-radius: 12px; 
+        font-size: 0.8rem; 
+        font-weight: bold; 
+        display: inline-block; 
+    }
+    
+    .caja-pruebas { 
+        background-color: #EFE8FA; 
+        padding: 12px; 
+        border-radius: 10px; 
+        text-align: center; 
+        font-weight: 500; 
+        color: #5C4A72; 
+        margin-top: 10px; 
+        margin-bottom: 15px; 
+        border: 1px solid #E0D3F5;
+    }
+    
+    .resultado-ia { 
+        background-color: #FFFFFF; 
+        padding: 22px; 
+        border-radius: 14px; 
+        border: 1px solid #E0D3F5; 
+        margin-top: 15px; 
+        box-shadow: 0px 4px 12px rgba(130, 89, 191, 0.08); 
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -95,7 +166,7 @@ def mostrar_logo(width=160):
     if os.path.exists("logo.jpg"):
         st.image("logo.jpg", width=width)
     else:
-        st.write("🦆 **PATU**")
+        st.write("🐾 **PATU AI**")
 
 def guardar_en_historial(modulo, entrada, resultado):
     st.session_state.historial_consultas.append({
@@ -126,7 +197,7 @@ if not st.session_state.user:
         mostrar_logo(width=140)
     with col_header:
         st.markdown('<h1>Workstation Clínico <span class="badge-pro">v3.0 PRO</span></h1>', unsafe_allow_html=True)
-        st.write("**PATU** — Psychologists United Across America")
+        st.write("**PATU AI** — Psychologists United Across America")
 
     opcion = st.sidebar.radio("Navegación", ["Iniciar Sesión", "Registrarse"])
 
@@ -184,7 +255,7 @@ else:
         mostrar_logo(width=130)
     with col_b:
         st.markdown('<h1>Workstation Clínico <span class="badge-pro">v3.0 PRO</span></h1>', unsafe_allow_html=True)
-        st.write("**PATU** — Psychologists United Across America")
+        st.write("**PATU AI** — Psychologists United Across America")
 
     # BARRA LATERAL
     with st.sidebar:
@@ -210,7 +281,6 @@ else:
                 del st.session_state[key]
             st.rerun()
 
-    # Si se agotaron los créditos y no hay un caso activo, se muestra la alerta pero NO se bloquean las pestañas para ver resultados
     if not puede_consultar and not st.session_state.res_analizador_clinico:
         st.warning(f"⚠️ Has agotado tus créditos disponibles.")
         st.info("Recarga 10 créditos adicionales por solo S/. 2.00 para continuar analizando nuevos casos.")
@@ -293,7 +363,6 @@ else:
                             st.session_state.res_analizador_clinico = res
                             guardar_en_historial("Analizador Clínico", narrativa_final, res)
                             
-                            # Si es la primera vez del caso, se descuenta el crédito único
                             if not st.session_state.caso_activo:
                                 st.session_state.caso_activo = True
                                 if not es_premium:
@@ -307,7 +376,6 @@ else:
                 else:
                     st.warning("Por favor ingresa una narrativa, graba audio o sube un documento/imagen.")
 
-        # RESULTADO PERSISTENTE (Se dibuja siempre)
         if st.session_state.res_analizador_clinico:
             st.markdown("---")
             st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
