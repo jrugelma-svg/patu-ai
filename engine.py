@@ -3,14 +3,13 @@ import io
 import docx
 from groq import Groq
 
-# Modelo global activo en la API de Groq
-MODELO_GROQ = "llama-3.1-8b-instant"
+# Variable global del modelo activo en Groq
+MODELO_ACTIVO = "llama-3.3-70b-versatile"
 
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
 # ==========================================
 def analizar_caso_inicial(narrativa_completa, api_key=None):
-    """Genera diagnóstico, brechas, hipótesis y batería sugerida."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -34,7 +33,7 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -46,7 +45,6 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
 # 2. BUSCADOR DE PRUEBAS
 # ==========================================
 def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
-    """Recomienda batería de pruebas psicométricas estandarizadas."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -70,7 +68,7 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -82,7 +80,6 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
 # 3. GENERADOR DE INFORMES PREMIUM
 # ==========================================
 def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=None):
-    """Genera un informe psicológico profesional redactado formalmente."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -112,7 +109,7 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -124,7 +121,6 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
 # 4. ANALIZADOR DE SESIONES
 # ==========================================
 def analizar_transcripcion_sesion(transcripcion, api_key=None):
-    """Analiza la dinámica, afecto y temas clave de una sesión."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -147,7 +143,7 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -159,7 +155,6 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
 # 5. PSICOEDUCACIÓN
 # ==========================================
 def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
-    """Genera un folleto/guía psicoeducativa adaptada."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -182,7 +177,7 @@ def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4
         )
@@ -194,7 +189,6 @@ def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
 # 6. CORRECTOR PSICOMÉTRICO
 # ==========================================
 def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=None):
-    """Interpreta los puntajes brutos/escalares de una prueba."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -216,7 +210,7 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=No
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model=MODELO_GROQ,
+            model=MODELO_ACTIVO,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2
         )
@@ -228,7 +222,6 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=No
 # FUNCIONES DE APOYO (AUDIO Y DOCUMENTOS)
 # ==========================================
 def transcribir_audio_groq(archivo_audio, api_key=None):
-    """Transcribe archivos de audio utilizando Whisper en Groq."""
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -249,7 +242,6 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
         return f"Error en transcripción: {str(e)}"
 
 def crear_documento_word(titulo, contenido):
-    """Convierte el texto generado en un archivo .docx para descargar."""
     doc = docx.Document()
     doc.add_heading(titulo, level=1)
     
@@ -270,7 +262,6 @@ def crear_documento_word(titulo, contenido):
     return buffer.getvalue()
 
 def extraer_texto_docx(archivo_docx):
-    """Extrae el texto de un archivo .docx de plantilla."""
     try:
         doc = docx.Document(archivo_docx)
         texto_completo = []
@@ -281,7 +272,6 @@ def extraer_texto_docx(archivo_docx):
         return ""
 
 def procesar_analisis(archivo, contexto=""):
-    """Soporte legacy para procesamiento con archivos."""
     texto_archivo = ""
     if archivo is not None:
         if archivo.name.endswith(".docx"):
