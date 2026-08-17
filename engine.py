@@ -6,7 +6,7 @@ from groq import Groq
 # ==========================================
 # MODELO ACTIVO (Estable y abierto en Groq)
 # ==========================================
-MODELO_ACTIVO = "llama3-8b-8192"
+MODELO_ACTIVO = "mixtral-8x7b-32768"
 
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
