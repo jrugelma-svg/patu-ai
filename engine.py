@@ -6,7 +6,7 @@ from groq import Groq
 # ==========================================
 # MODELO ACTIVO (Estable y abierto en Groq)
 # ==========================================
-MODELO_ACTIVO = "mixtral-8x7b-32768"
+MODELO_ACTIVO = "openai/gpt-oss-20b"
 
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
