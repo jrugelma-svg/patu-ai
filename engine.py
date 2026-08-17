@@ -3,8 +3,8 @@ import io
 import docx
 from groq import Groq
 
-# Modelo activo en Groq
-MODELO_GROQ = "openai/gpt-oss-120b"
+# Modelo global activo en la API de Groq
+MODELO_GROQ = "llama-3.1-8b-instant"
 
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
