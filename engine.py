@@ -3,6 +3,9 @@ import io
 import docx
 from groq import Groq
 
+# Modelo activo en Groq
+MODELO_GROQ = "openai/gpt-oss-120b"
+
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
 # ==========================================
@@ -31,7 +34,7 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -67,7 +70,7 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -109,7 +112,7 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -144,7 +147,7 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -179,7 +182,7 @@ def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4
         )
@@ -213,7 +216,7 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=No
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model=MODELO_GROQ,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2
         )
@@ -233,7 +236,6 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
 
     try:
         client = Groq(api_key=api_key)
-        # Lee el contenido del audio subido por Streamlit
         audio_bytes = archivo_audio.read()
         nombre_archivo = getattr(archivo_audio, 'name', 'audio.mp3')
         
@@ -251,7 +253,6 @@ def crear_documento_word(titulo, contenido):
     doc = docx.Document()
     doc.add_heading(titulo, level=1)
     
-    # Agregar párrafos
     lineas = contenido.split('\n')
     for linea in lineas:
         if linea.startswith('### '):
