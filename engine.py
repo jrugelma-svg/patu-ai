@@ -129,7 +129,7 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -155,7 +155,7 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -195,7 +195,7 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -225,7 +225,7 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
@@ -255,7 +255,7 @@ def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.4
         )
@@ -285,7 +285,7 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, edad, api_
     try:
         client = groq.Groq(api_key=api_key)
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.2
         )
@@ -372,7 +372,7 @@ def procesar_analisis(archivo, instrucciones):
         """
         
         response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
+            model="llama-3.1-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3
         )
