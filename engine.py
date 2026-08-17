@@ -3,8 +3,10 @@ import io
 import docx
 from groq import Groq
 
-# Variable global del modelo activo en Groq
-MODELO_ACTIVO = "llama-3.3-70b-versatile"
+# ==========================================
+# MODELO ACTIVO (Estable y abierto en Groq)
+# ==========================================
+MODELO_ACTIVO = "llama3-8b-8192"
 
 # ==========================================
 # 1. ANALIZADOR CLÍNICO
@@ -242,19 +244,30 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
         return f"Error en transcripción: {str(e)}"
 
 def crear_documento_word(titulo, contenido):
+    """Convierte el texto generado en un archivo .docx mejor formateado."""
     doc = docx.Document()
     doc.add_heading(titulo, level=1)
     
     lineas = contenido.split('\n')
     for linea in lineas:
+        linea = linea.strip()
+        if not linea:
+            continue
+            
+        # Limpiar negritas de Markdown para que no se vean los asteriscos
+        texto_limpio = linea.replace('**', '').replace('__', '')
+        
         if linea.startswith('### '):
-            doc.add_heading(linea.replace('### ', ''), level=2)
+            doc.add_heading(texto_limpio.replace('### ', ''), level=3)
         elif linea.startswith('## '):
-            doc.add_heading(linea.replace('## ', ''), level=2)
+            doc.add_heading(texto_limpio.replace('## ', ''), level=2)
         elif linea.startswith('# '):
-            doc.add_heading(linea.replace('# ', ''), level=1)
+            doc.add_heading(texto_limpio.replace('# ', ''), level=1)
+        elif linea.startswith('- ') or linea.startswith('* '):
+            # Agregar como viñeta oficial de Word
+            doc.add_paragraph(texto_limpio[2:], style='List Bullet')
         else:
-            doc.add_paragraph(linea)
+            doc.add_paragraph(texto_limpio)
             
     buffer = io.BytesIO()
     doc.save(buffer)
