@@ -155,6 +155,55 @@ def recargar_creditos_usuario(user_id, creditos_a_sumar=10):
         return False
 
 
+def guardar_consulta(user_id, modulo, entrada, resultado):
+    """
+    Guarda una consulta realizada por el usuario en la tabla 'consultas' de Supabase,
+    para que quede como historial persistente (no se pierde al cerrar sesión).
+    """
+    try:
+        nueva_consulta = {
+            "user_id": user_id,
+            "modulo": modulo,
+            "entrada": entrada,
+            "resultado": resultado
+        }
+        supabase.table("consultas").insert(nueva_consulta).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error al guardar la consulta en el historial: {str(e)}")
+        return False
+
+
+def obtener_historial_usuario(user_id, limite=50):
+    """
+    Obtiene el historial de consultas del usuario, ordenado de la más reciente
+    a la más antigua. 'limite' controla cuántas consultas se traen como máximo.
+    """
+    try:
+        res = (
+            supabase.table("consultas")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("creado_en", desc=True)
+            .limit(limite)
+            .execute()
+        )
+        return res.data if res.data else []
+    except Exception as e:
+        st.error(f"Error al obtener el historial: {str(e)}")
+        return []
+
+
+def borrar_historial_usuario(user_id):
+    """Borra todo el historial de consultas de un usuario."""
+    try:
+        supabase.table("consultas").delete().eq("user_id", user_id).execute()
+        return True
+    except Exception as e:
+        st.error(f"Error al borrar el historial: {str(e)}")
+        return False
+
+
 def crear_preferencia_pago(user_id, email):
     """Genera un link de pago en Mercado Pago para recargar +10 créditos por S/. 2.00."""
     if not sdk:
