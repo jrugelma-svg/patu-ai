@@ -8,7 +8,10 @@ from database import (
     obtener_usuario_por_id,
     incrementar_consultas,
     recargar_creditos_usuario,
-    crear_preferencia_pago
+    crear_preferencia_pago,
+    guardar_consulta,
+    obtener_historial_usuario,
+    borrar_historial_usuario
 )
 from engine import (
     analizar_caso_inicial,
@@ -169,11 +172,15 @@ def mostrar_logo(width=160):
         st.write("🐾 **PATU AI**")
 
 def guardar_en_historial(modulo, entrada, resultado):
+    # Se guarda en session_state para mostrarlo de inmediato en esta sesión...
     st.session_state.historial_consultas.append({
         "modulo": modulo,
         "entrada": entrada,
         "resultado": resultado
     })
+    # ...y también en Supabase para que persista aunque el usuario cierre sesión.
+    if st.session_state.user:
+        guardar_consulta(st.session_state.user["id"], modulo, entrada, resultado)
 
 def limpiar_caso_actual():
     """Resetea el caso actual para permitir ingresar un nuevo paciente."""
@@ -607,12 +614,37 @@ else:
         st.write(f"Casos/Créditos consumidos en la cuenta: **{consultas_usadas}**")
         st.markdown("---")
 
-        if st.session_state.historial_consultas:
-            for idx, item in enumerate(reversed(st.session_state.historial_consultas)):
-                with st.expander(f"📌 [{item['modulo']}] - Consulta #{len(st.session_state.historial_consultas) - idx}"):
+        historial_bd = obtener_historial_usuario(user["id"], limite=100)
+
+        if historial_bd:
+            col_hist1, col_hist2 = st.columns([3, 1])
+            with col_hist1:
+                st.caption(f"Mostrando {len(historial_bd)} consulta(s), de la más reciente a la más antigua.")
+            with col_hist2:
+                if st.button("🗑️ Borrar todo mi historial", key="btn_borrar_historial"):
+                    st.session_state["confirmar_borrado"] = True
+
+            if st.session_state.get("confirmar_borrado"):
+                st.warning("¿Seguro que deseas borrar TODO tu historial? Esta acción no se puede deshacer.")
+                col_conf1, col_conf2 = st.columns(2)
+                with col_conf1:
+                    if st.button("✅ Sí, borrar", key="btn_confirmar_borrado"):
+                        borrar_historial_usuario(user["id"])
+                        st.session_state.historial_consultas = []
+                        st.session_state["confirmar_borrado"] = False
+                        st.success("Historial borrado.")
+                        st.rerun()
+                with col_conf2:
+                    if st.button("❌ Cancelar", key="btn_cancelar_borrado"):
+                        st.session_state["confirmar_borrado"] = False
+                        st.rerun()
+
+            for idx, item in enumerate(historial_bd):
+                fecha = item.get("creado_en", "")
+                with st.expander(f"📌 [{item['modulo']}] - {fecha[:16].replace('T', ' ')}"):
                     st.write("**Entrada:**")
                     st.info(item["entrada"])
                     st.write("**Resultado:**")
                     st.markdown(item["resultado"])
         else:
-            st.info("Aún no has realizado consultas en esta sesión.")
+            st.info("Aún no has realizado consultas. Tu historial aparecerá aquí y se guardará automáticamente aunque cierres sesión.")
