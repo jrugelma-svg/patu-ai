@@ -29,7 +29,7 @@ def evaluar_nivel_riesgo_automatico(texto):
 # ==========================================
 # 1. RUTEADOR E INTÉRPRETE DE VOZ AUTÓNOMO (PATU LIVE)
 # ==========================================
-def procesar_comando_agente_patu(comando_voz, datos_contexto="", api_key=None):
+def procesar_comando_agente_patu(comando_voz, datos_contexto="", primera_interaccion=False, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -37,13 +37,13 @@ def procesar_comando_agente_patu(comando_voz, datos_contexto="", api_key=None):
 
     comando_lower = comando_voz.lower()
 
-    # COMANDO ESPECIAL: MUESTRA TU PODER / DEMOSTRACIÓN AUTÓNOMA
+    # COMANDO ESPECIAL: MUESTRA TU PODER
     if "poder" in comando_lower or "demostración" in comando_lower or "demostracion" in comando_lower or "capaz" in comando_lower:
         return """
         🐾 **DEMOSTRACIÓN DE POTENCIAL CLÍNICO AUTÓNOMO — PATU AI**
         
         ### 🔬 1. Evaluación y Diagnóstico Multiaxial Automático
-        - **Impensión Diagnóstica (DSM-5):** F41.1 Trastorno de Ansiedad Generalizada / F32.1 Episodio Depresivo Moderado.
+        - **Impresión Diagnóstica (DSM-5):** F41.1 Trastorno de Ansiedad Generalizada / F32.1 Episodio Depresivo Moderado.
         - **Factores de Riesgo:** Estrés académico elevado, alteración del patrón de sueño y somatización conductual.
         - **Batería Sugerida:** Inventario de Ansiedad de Beck (BAI) + Inventario de Depresión de Beck (BDI-II).
 
@@ -61,12 +61,11 @@ def procesar_comando_agente_patu(comando_voz, datos_contexto="", api_key=None):
     prompt_sistema = f"""
     Eres PATU AI, un asistente clínico experto en psicología con la personalidad de un amigable gatito blanco colaborador.
 
-    REGLAS RESTRICCIONALES DE RESPUESTA POR VOZ:
-    1. SI EL USUARIO SOLO DICE "Hola", "Dime quién eres", "Hola PATU" O SIMILARES:
-       Responde ÚNICAMENTE: "¡Hola a todos! Soy PATU AI, el workstation clínico inteligente especializado en psicología. Estoy listo para asistirlos en diagnósticos, planes de tratamiento e informes. ¿En qué trabajaremos hoy?"
+    REGLAS DE INTERACCIÓN CONTINUA Y NATURAL:
+    1. {"SI ES LA PRIMERA INTERACCIÓN DE LA SESIÓN: Preséntate brevemente diciendo: '¡Hola! Soy PATU AI, tu asistente clínico de psicología. ¿En qué trabajamos hoy?'" if primera_interaccion else "NO TE PRESENTES DE NUEVO. Ya estás en medio de una conversación fluida con el usuario. Responde de forma directa, natural y naturalizada a su última consulta o comentario, sin volver a decir tu nombre ni saludarte formalmente salvo que te lo pidan explícitamente."}
 
-    2. SI Y SOLO SI EL USUARIO PREGUNTA EXPLÍCITAMENTE POR TU CREADOR O AUTOR (ej: "Dime quién eres y quién es tu creador", "¿Quién te creó?"):
-       Responde: "¡Hola a todos! Soy PATU AI, un asistente clínico inteligente creado con orgullo por Yordán Rugel Martínez junto al Grupo 2 del curso de Gestión de Proyectos de los días viernes, a cargo del docente Richard Edgar González."
+    2. SI PREGUNTAN EXPLÍCITAMENTE POR TU CREADOR O AUTOR:
+       Responde: "Soy PATU AI, un asistente clínico inteligente creado con orgullo por Yordán Rugel Martínez junto al Grupo 2 del curso de Gestión de Proyectos de los días viernes, a cargo del docente Richard Edgar González."
 
     CONTEXTO ACTUAL DEL PACIENTE:
     "{datos_contexto}"
@@ -75,8 +74,8 @@ def procesar_comando_agente_patu(comando_voz, datos_contexto="", api_key=None):
     "{comando_voz}"
 
     REGLAS GENERALES:
-    - Sé directo, empático y conciso.
-    - Si te piden realizar una tarea clínica (fases, planes, genogramas, informes), ejecútala con máximo rigor técnico.
+    - Sé muy directo, empático y natural.
+    - Mantén respuestas breves para agilizar el diálogo fluido por voz.
     """
 
     try:
