@@ -9,6 +9,37 @@ from groq import Groq
 MODELO_ACTIVO = "openai/gpt-oss-20b"
 
 # ==========================================
+# DETECTOR AUTOMÁTICO DE RIESGO
+# ==========================================
+def evaluar_nivel_riesgo_automatico(texto):
+    """Analiza la narrativa clínica para detectar banderas rojas automáticas."""
+    if not texto:
+        return "Bajo"
+        
+    texto_lower = texto.lower()
+    
+    # Palabras de riesgo Alto (Ideación/Intento suicida, autolesiones, violencia)
+    palabras_alto = [
+        "matar", "suicid", "morirme", "atentar", "intento", "cúter", "cuter", 
+        "corta", "ahocar", "arma", "morir", "desaparecer", "no quiero vivir"
+    ]
+    # Palabras de riesgo Medio (Ansiedad severa, pánico, consumo, agresión)
+    palabras_medio = [
+        "ansiedad", "pánico", "panico", "droga", "alcohol", "agresiv", 
+        "pelear", "depresió", "depresio", "triste", "llorar", "impulsiv"
+    ]
+
+    for palabra in palabras_alto:
+        if palabra in texto_lower:
+            return "Alto"
+            
+    for palabra in palabras_medio:
+        if palabra in texto_lower:
+            return "Medio"
+            
+    return "Bajo"
+
+# ==========================================
 # 1. ANALIZADOR CLÍNICO
 # ==========================================
 def analizar_caso_inicial(narrativa_completa, api_key=None):
@@ -79,7 +110,7 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
         return f"❌ Error al buscar pruebas: {str(e)}"
 
 # ==========================================
-# 3. DISEÑADOR DE PLANES DE TRATAMIENTO (NUEVO)
+# 3. DISEÑADOR DE PLANES DE TRATAMIENTO
 # ==========================================
 def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesiones=12, api_key=None):
     if not api_key:
@@ -98,9 +129,9 @@ def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesion
 
     Por favor proporciona una propuesta estructurada con:
     ### 1. Objetivos Terapéuticos (Corto, Mediano y Largo Plazo)
-    ### 2. Estructura por Fases de Intervención (Fase Inicial, Núcleo e Intervención, Cierre y Prevención de Recaídas)
+    ### 2. Estructura por Fases de Intervención
     ### 3. Técnicas y Herramientas Clínicas Específicas
-    ### 4. Tareas Psicoeducativas o Registros para Casa (Entre sesiones)
+    ### 4. Tareas Psicoeducativas o Registros para Casa
     ### 5. Criterios de Alta y Muestras de Progreso
     """
 
@@ -241,7 +272,7 @@ def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=No
     - Puntajes/Puntuaciones: {puntajes}
     
     Por favor detalla:
-    1. Conversión/Ubicación en baremos o rangos (Severidad, Percentiles, Desviaciones según corresponda).
+    1. Conversión/Ubicación en baremos o rangos (Severidad, Percentiles, Desviaciones).
     2. Interpretación clínica cualitativa de cada área evaluada.
     3. Conclusión psicométrica integradora.
     """
@@ -268,8 +299,6 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
 
     try:
         client = Groq(api_key=api_key)
-        
-        # Reset de puntero para evitar enviar 0 bytes a Whisper
         if hasattr(archivo_audio, 'seek'):
             archivo_audio.seek(0)
             
@@ -286,7 +315,6 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
         return f"Error en transcripción: {str(e)}"
 
 def crear_documento_word(titulo, contenido):
-    """Convierte el texto generado en un archivo .docx mejor formateado."""
     doc = docx.Document()
     doc.add_heading(titulo, level=1)
     
@@ -296,7 +324,6 @@ def crear_documento_word(titulo, contenido):
         if not linea:
             continue
             
-        # Limpiar negritas de Markdown para que no se vean los asteriscos
         texto_limpio = linea.replace('**', '').replace('__', '')
         
         if linea.startswith('### '):
