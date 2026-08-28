@@ -1,6 +1,7 @@
 import os
 import io
 import docx
+import urllib.parse
 from groq import Groq
 
 MODELO_ACTIVO = "openai/gpt-oss-20b"
@@ -20,6 +21,19 @@ def evaluar_nivel_riesgo_automatico(texto):
             return "Medio"
     return "Bajo"
 
+# ==========================================
+# GENERADOR DE IMÁGENES CLÍNICAS (FUNCIÓN BOOM)
+# ==========================================
+def generar_imagen_terapeutica(prompt_descripcion):
+    """Genera una imagen mediante IA a partir de un prompt o metáfora clínica."""
+    prompt_en = f"psychological clinical illustration, therapeutic concept art, clean digital art, soft pastel colors, highly detailed: {prompt_descripcion}"
+    prompt_encoded = urllib.parse.quote(prompt_en)
+    url_imagen = f"https://image.pollinations.ai/prompt/{prompt_encoded}?width=1024&height=768&nologo=true"
+    return url_imagen
+
+# ==========================================
+# PROCESADOR DE AGENTE DE VOZ PATU LIVE
+# ==========================================
 def procesar_comando_agente_patu(comando_voz, datos_contexto="", primera_interaccion=False, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -27,9 +41,6 @@ def procesar_comando_agente_patu(comando_voz, datos_contexto="", primera_interac
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     comando_lower = comando_voz.lower()
-
-    if any(p in comando_lower for p in ["apágate", "apagate", "silénciate", "silenciate", "detente", "chau patu", "apagar"]):
-        return "[ACCION:APAGAR] Entendido. Desactivando el micrófono de control autónomo. Estaré en espera cuando me necesites."
 
     if "descarga" in comando_lower or "descárgalo" in comando_lower or "bajar archivo" in comando_lower:
         return "[ACCION:DESCARGAR] Entendido, he preparado tu documento. La descarga comenzará inmediatamente en pantalla."
@@ -79,6 +90,9 @@ def procesar_comando_agente_patu(comando_voz, datos_contexto="", primera_interac
     except Exception as e:
         return f"❌ Error procesando orden de voz: {str(e)}"
 
+# ==========================================
+# MÓDULOS CLÍNICOS
+# ==========================================
 def analizar_caso_inicial(narrativa_completa, api_key=None):
     if not api_key: api_key = os.getenv("GROQ_API_KEY")
     if not api_key: return "❌ Error: No se encontró GROQ_API_KEY."
@@ -139,10 +153,20 @@ def generar_compromiso_vida(nombre_paciente, api_key=None):
         return response.choices[0].message.content
     except Exception as e: return f"❌ Error: {str(e)}"
 
-def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesiones=12, api_key=None):
+def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesiones=12, sintomas="", api_key=None):
     if not api_key: api_key = os.getenv("GROQ_API_KEY")
     if not api_key: return "❌ Error: No se encontró GROQ_API_KEY."
-    prompt = f"Diseña un plan de tratamiento psicológico de {num_sesiones} sesiones bajo enfoque {enfoque} para: {diagnostico_o_caso}"
+    prompt = f"""Diseña un plan de tratamiento psicológico detallado de {num_sesiones} sesiones bajo el enfoque {enfoque}.
+    Diagnóstico / Problema Blanco: {diagnostico_o_caso}
+    Síntomas y Metas Clínicas: {sintomas}
+    
+    Incluye:
+    ### 1. Objetivos Terapéuticos Generales y Específicos
+    ### 2. Estructura Faseda (Sesión por Sesión o Bloques de Sesiones)
+    ### 3. Técnicas Específicas Recomendadas
+    ### 4. Tareas e Intervenciones entre Sesiones
+    ### 5. Indicadores de Logro Terapéutico
+    """
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
@@ -152,7 +176,19 @@ def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesion
 def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=None):
     if not api_key: api_key = os.getenv("GROQ_API_KEY")
     if not api_key: return "❌ Error: No se encontró GROQ_API_KEY."
-    prompt = f"Redacta un informe psicológico formal. Enfoque: {enfoque}, Datos: {datos_dict}, Guía: {plantilla_texto}"
+    prompt = f"""Redacta un informe psicológico formal y estructurado con los siguientes datos:
+    - Enfoque del Informe: {enfoque}
+    - Datos del Evaluado: {datos_dict}
+    - Guía / Plantilla de estilo: {plantilla_texto}
+
+    Estructura requerida:
+    ### I. DATOS DE FILIACIÓN
+    ### II. MOTIVO DE CONSULTA Y PROBLEMA ACTUAL
+    ### III. PRUEBAS Y INSTRUMENTOS APLICADOS
+    ### IV. OBSERVACIONES DE LA CONDUCTA
+    ### V. RESULTADOS E IMPRESIÓN DIAGNÓSTICA
+    ### VI. RECOMENDACIONES Y SUGERENCIAS TERAPÉUTICAS
+    """
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
@@ -172,7 +208,14 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
 def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     if not api_key: api_key = os.getenv("GROQ_API_KEY")
     if not api_key: return "❌ Error: No se encontró GROQ_API_KEY."
-    prompt = f"Crea una guía psicoeducativa clara para {destinatario} sobre la condición: {diagnostico}"
+    prompt = f"""Crea un folleto o guía psicoeducativa clara, empática y profesional dirigida a {destinatario} sobre la condición: {diagnostico}.
+    
+    Incluye:
+    ### 1. ¿Qué es y qué no es {diagnostico}?
+    ### 2. Síntomas Comunes y Mitos
+    ### 3. Pautas Prácticas de Manejo Diario
+    ### 4. ¿Cuándo buscar ayuda profesional de emergencia?
+    """
     try:
         client = Groq(api_key=api_key)
         response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.4)
