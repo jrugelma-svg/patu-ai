@@ -3,45 +3,23 @@ import io
 import docx
 from groq import Groq
 
-# ==========================================
-# MODELO ACTIVO (Estable y abierto en Groq)
-# ==========================================
 MODELO_ACTIVO = "openai/gpt-oss-20b"
 
-# ==========================================
-# DETECTOR AUTOMÁTICO DE RIESGO
-# ==========================================
 def evaluar_nivel_riesgo_automatico(texto):
-    """Analiza la narrativa clínica para detectar banderas rojas automáticas."""
     if not texto:
         return "Bajo"
-        
     texto_lower = texto.lower()
-    
-    # Palabras de riesgo Alto (Ideación/Intento suicida, autolesiones, violencia)
-    palabras_alto = [
-        "matar", "suicid", "morirme", "atentar", "intento", "cúter", "cuter", 
-        "corta", "ahocar", "arma", "morir", "desaparecer", "no quiero vivir"
-    ]
-    # Palabras de riesgo Medio (Ansiedad severa, pánico, consumo, agresión)
-    palabras_medio = [
-        "ansiedad", "pánico", "panico", "droga", "alcohol", "agresiv", 
-        "pelear", "depresió", "depresio", "triste", "llorar", "impulsiv"
-    ]
+    palabras_alto = ["matar", "suicid", "morirme", "atentar", "intento", "cúter", "cuter", "corta", "ahocar", "arma", "morir", "desaparecer", "no quiero vivir"]
+    palabras_medio = ["ansiedad", "pánico", "panico", "droga", "alcohol", "agresiv", "pelear", "depresió", "depresio", "triste", "llorar", "impulsiv"]
 
     for palabra in palabras_alto:
         if palabra in texto_lower:
             return "Alto"
-            
     for palabra in palabras_medio:
         if palabra in texto_lower:
             return "Medio"
-            
     return "Bajo"
 
-# ==========================================
-# 1. ANALIZADOR CLÍNICO
-# ==========================================
 def analizar_caso_inicial(narrativa_completa, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -54,9 +32,9 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
     
     ### 1. Resumen Clínico del Caso
     ### 2. Impresión Diagnóstica Multiaxial (CIE-11 / DSM-5)
-    ### 3. Brechas de Información y Preguntas Recomendadas para la Entrevista
+    ### 3. Brechas de Información y Preguntas Recomendadas
     ### 4. Hipótesis Explicativas del Caso
-    ### 5. Diagnósticos Diferenciales y Posibles Trastornos a Descartar
+    ### 5. Diagnósticos Diferenciales a Descartar
     ### 6. Batería de Pruebas Psicométricas Sugeridas
     
     CASO CLÍNICO:
@@ -65,18 +43,11 @@ def analizar_caso_inicial(narrativa_completa, api_key=None):
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error en análisis clínico: {str(e)}"
 
-# ==========================================
-# 2. BUSCADOR DE PRUEBAS
-# ==========================================
 def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -84,34 +55,95 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     prompt = f"""
-    Eres un psicómetra experto. Recomienda las pruebas psicométricas y proyectivas normadas más adecuadas para el siguiente caso.
+    Eres un psicómetra experto. Recomienda las pruebas psicométricas y proyectivas normadas para:
+    - Edad: {edad} años ({etapa})
+    - Sintomatología: {caso_o_sintomas}
     
-    Datos del Paciente:
-    - Edad: {edad} años
-    - Etapa de desarrollo: {etapa}
-    - Sintomatología/Motivo: {caso_o_sintomas}
-    
-    Por favor indica:
+    Indica:
     1. Nombre oficial de la prueba y sigla.
-    2. Lo que evalúa (variables/dimensiones).
-    3. Justificación de su elección para este caso particular.
-    4. Rango de edad normado de la prueba.
+    2. Dimensiones que evalúa.
+    3. Justificación clínica de su elección.
+    4. Rango de edad normado.
     """
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error al buscar pruebas: {str(e)}"
 
-# ==========================================
-# 3. DISEÑADOR DE PLANES DE TRATAMIENTO
-# ==========================================
+def generar_genograma_familiar(texto_familia, api_key=None):
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return "❌ Error: No se encontró GROQ_API_KEY."
+
+    prompt = f"""
+    Eres un terapeuta familiar experto en psicodiagnóstico sistémico.
+    A partir de los siguientes datos, genera una representación clínica y estructurada del GENOGRAMA FAMILIAR:
+
+    DATOS FAMILIARES:
+    "{texto_familia}"
+
+    Proporciona:
+    ### 1. Estructura Familiar Multigeneracional (Mapa en texto/tabla)
+    ### 2. Calidad de las Relaciones (Conflictivas, Fusionales, Distantes, Alianzas)
+    ### 3. Antecedentes Clínicos y Legado Transgeneracional
+    ### 4. Hipótesis Sistémica e Impacto en el Paciente
+    """
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al generar genograma: {str(e)}"
+
+def generar_supervision_coterapeuta(nombre_paciente, consulta, api_key=None):
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return "❌ Error: No se encontró GROQ_API_KEY."
+
+    prompt = f"""
+    Eres un supervisor clínico senior. Brinda orientación técnica para el abordaje del paciente {nombre_paciente}:
+
+    CONSULTA DEL TERAPEUTA:
+    "{consulta}"
+
+    Responde con:
+    ### 1. Análisis de la Dinámica Terapéutica y Alianza
+    ### 2. Estrategias Sugeridas para la Siguiente Sesión
+    ### 3. Manejo de Resistencias o En cuadre Terapéutico
+    ### 4. Preguntas de Auto-Reflexión para el Profesional
+    """
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error en supervisión: {str(e)}"
+
+def generar_compromiso_vida(nombre_paciente, api_key=None):
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return "❌ Error: No se encontró GROQ_API_KEY."
+
+    prompt = f"""
+    Redacta un documento formal de 'CONTRATO TERAPÉUTICO DE COMPROMISO CON LA VIDA Y SEGURIDAD' para el paciente {nombre_paciente}.
+    Incluye cláusulas de apoyo, red de contactos de emergencia, compromisos mutuos entre terapeuta y paciente, y pautas de acción inmediata ante crisis.
+    """
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al generar compromiso: {str(e)}"
+
 def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesiones=12, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -119,36 +151,21 @@ def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesion
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     prompt = f"""
-    Eres un psicólogo clínico especialista en diseño de intervenciones terapéuticas basadas en evidencia.
-    Diseña un plan de tratamiento psicológico formal e integral.
-
-    Detalles de la Intervención:
-    - Caso / Diagnóstico Blanco: {diagnostico_o_caso}
-    - Enfoque / Modelo Terapéutico: {enfoque}
-    - Duración Estimada: {num_sesiones} sesiones.
-
-    Por favor proporciona una propuesta estructurada con:
-    ### 1. Objetivos Terapéuticos (Corto, Mediano y Largo Plazo)
+    Diseña un plan de tratamiento psicológico de {num_sesiones} sesiones bajo el enfoque {enfoque} para: {diagnostico_o_caso}.
+    Incluye:
+    ### 1. Objetivos Terapéuticos
     ### 2. Estructura por Fases de Intervención
-    ### 3. Técnicas y Herramientas Clínicas Específicas
-    ### 4. Tareas Psicoeducativas o Registros para Casa
-    ### 5. Criterios de Alta y Muestras de Progreso
+    ### 3. Técnicas Específicas
+    ### 4. Tareas para Casa
     """
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content
     except Exception as e:
-        return f"❌ Error al generar el plan de tratamiento: {str(e)}"
+        return f"❌ Error en plan de tratamiento: {str(e)}"
 
-# ==========================================
-# 4. GENERADOR DE INFORMES PREMIUM
-# ==========================================
 def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -156,141 +173,64 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
         return "❌ Error: No se encontró GROQ_API_KEY."
 
     prompt = f"""
-    Eres un psicólogo clínico redactor senior. Redacta un informe psicológico formal basado en los datos proporcionados.
-    
-    Enfoque de Redacción: {enfoque}
-    
-    Datos del Paciente y Evaluación:
-    - Nombre: {datos_dict.get('nombre')}
-    - Edad: {datos_dict.get('edad')}
-    - Género: {datos_dict.get('genero')}
-    - Ocupación: {datos_dict.get('ocupacion')}
-    - Motivo de Consulta: {datos_dict.get('motivo')}
-    - Problema Actual y Antecedentes: {datos_dict.get('problema_actual')}
-    - Pruebas Aplicadas y Resultados: {datos_dict.get('pruebas_aplicadas')}
-    - Observaciones Conductuales: {datos_dict.get('observaciones')}
-    - Conclusiones y Diagnóstico: {datos_dict.get('diagnostico')}
-    
-    Guía de estilo/plantilla adicional (si aplica): {plantilla_texto}
-    
-    Estructura el informe con formalidad clínica, excelente lenguaje técnico y apartados claros.
+    Redacta un informe psicológico formal.
+    Enfoque: {enfoque}
+    Datos: {datos_dict}
+    Guía de estilo: {plantilla_texto}
     """
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error al generar informe: {str(e)}"
 
-# ==========================================
-# 5. ANALIZADOR DE SESIONES
-# ==========================================
 def analizar_transcripcion_sesion(transcripcion, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return "❌ Error: No se encontró GROQ_API_KEY."
 
-    prompt = f"""
-    Eres un supervisor clínico. Analiza la siguiente transcripción de sesión terapéutica:
-    
-    TRANSCRIPCIÓN:
-    "{transcripcion}"
-    
-    Proporciona:
-    1. Temas principales abordados.
-    2. Estado afectivo y lenguaje no verbal/verbal del paciente.
-    3. Intervenciones clave del terapeuta y su efectividad.
-    4. Patrones de pensamiento o defensas detectadas.
-    5. Recomendaciones o focos para la siguiente sesión.
-    """
+    prompt = f"Analiza la siguiente transcripción de sesión: {transcripcion}"
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.3)
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error en análisis de sesión: {str(e)}"
 
-# ==========================================
-# 6. PSICOEDUCACIÓN
-# ==========================================
 def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return "❌ Error: No se encontró GROQ_API_KEY."
 
-    prompt = f"""
-    Crea un documento psicoeducativo claro, empático y profesional.
-    
-    - Condición/Diagnóstico: {diagnostico}
-    - Dirigido a: {destinatario}
-    
-    Incluye:
-    1. ¿Qué es y qué no es esta condición? (Lenguaje accesible)
-    2. Síntomas comunes expuestos con empatía.
-    3. Estrategias de afrontamiento y pautas prácticas diarias.
-    4. ¿Cuándo buscar ayuda de emergencia?
-    5. Mitos vs. Realidades.
-    """
+    prompt = f"Crea una guía psicoeducativa para {destinatario} sobre {diagnostico}."
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.4)
         return response.choices[0].message.content
     except Exception as e:
-        return f"❌ Error al generar psicoeducación: {str(e)}"
+        return f"❌ Error en psicoeducación: {str(e)}"
 
-# ==========================================
-# 7. CORRECTOR PSICOMÉTRICO
-# ==========================================
 def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
         return "❌ Error: No se encontró GROQ_API_KEY."
 
-    prompt = f"""
-    Eres un psicómetra. Interpreta los siguientes datos de evaluación psicométrica:
-    
-    - Prueba: {nombre_prueba}
-    - Edad del evaluado: {edad} años
-    - Puntajes/Puntuaciones: {puntajes}
-    
-    Por favor detalla:
-    1. Conversión/Ubicación en baremos o rangos (Severidad, Percentiles, Desviaciones).
-    2. Interpretación clínica cualitativa de cada área evaluada.
-    3. Conclusión psicométrica integradora.
-    """
+    prompt = f"Interpreta los puntajes de la prueba {nombre_prueba} para un evaluado de {edad} años: {puntajes}"
 
     try:
         client = Groq(api_key=api_key)
-        response = client.chat.completions.create(
-            model=MODELO_ACTIVO,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2
-        )
+        response = client.chat.completions.create(model=MODELO_ACTIVO, messages=[{"role": "user", "content": prompt}], temperature=0.2)
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error al interpretar puntajes: {str(e)}"
 
-# ==========================================
-# FUNCIONES DE APOYO (AUDIO Y DOCUMENTOS)
-# ==========================================
 def transcribir_audio_groq(archivo_audio, api_key=None):
     if not api_key:
         api_key = os.getenv("GROQ_API_KEY")
@@ -301,7 +241,6 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
         client = Groq(api_key=api_key)
         if hasattr(archivo_audio, 'seek'):
             archivo_audio.seek(0)
-            
         audio_bytes = archivo_audio.read()
         nombre_archivo = getattr(archivo_audio, 'name', 'audio.mp3')
         
