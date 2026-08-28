@@ -44,7 +44,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# ESTILOS CSS CON TARJETA DE ASISTENTE EN ARMONÍA DE PALETA MALVA/NEÓN
+# ESTILOS CSS + AVATAR DE GATITO ANIMADO EN CSS PURO
 # ==========================================
 st.markdown("""
     <style>
@@ -123,26 +123,68 @@ st.markdown("""
         padding: 25px !important;
         text-align: center !important;
         box-shadow: 0 0 25px rgba(124, 66, 209, 0.3) !important;
-        position: relative;
     }
 
-    .patu-avatar-animado {
-        width: 170px !important;
-        height: 170px !important;
-        border-radius: 50% !important;
-        border: 4px solid #8A93FF !important;
-        object-fit: cover !important;
-        animation: floatPatuNeon 2.5s infinite ease-in-out !important;
+    /* DISEÑO Y ANIMACIÓN DEL GATITO BLANCO EN CSS PURO */
+    .cat-avatar-container {
+        width: 140px;
+        height: 140px;
+        margin: 0 auto;
+        position: relative;
+        animation: floatPatuNeon 2.5s infinite ease-in-out;
+    }
+
+    .cat-head {
+        width: 120px;
+        height: 100px;
+        background: #FFFFFF;
+        border-radius: 50% 50% 45% 45%;
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        border: 3px solid #7C42D1;
+        box-shadow: 0 0 20px rgba(124, 66, 209, 0.4);
+    }
+
+    .cat-ear-left, .cat-ear-right {
+        width: 0;
+        height: 0;
+        border-left: 18px solid transparent;
+        border-right: 18px solid transparent;
+        border-bottom: 35px solid #FFFFFF;
+        position: absolute;
+        top: -20px;
+    }
+    .cat-ear-left { left: 8px; transform: rotate(-15deg); }
+    .cat-ear-right { right: 8px; transform: rotate(15deg); }
+
+    .cat-eye-left, .cat-eye-right {
+        width: 14px;
+        height: 18px;
+        background: #7C42D1;
+        border-radius: 50%;
+        position: absolute;
+        top: 35px;
+    }
+    .cat-eye-left { left: 28px; }
+    .cat-eye-right { right: 28px; }
+
+    .cat-nose {
+        width: 10px;
+        height: 8px;
+        background: #FF85B8;
+        border-radius: 50%;
+        position: absolute;
+        top: 55px;
+        left: 55px;
     }
 
     @keyframes floatPatuNeon {
         0%, 100% {
             transform: translateY(0px) scale(1);
-            box-shadow: 0 0 20px rgba(124, 66, 209, 0.6), 0 0 40px rgba(138, 147, 255, 0.3);
         }
         50% {
-            transform: translateY(-14px) scale(1.05);
-            box-shadow: 0 15px 35px rgba(255, 133, 184, 0.8), 0 0 50px rgba(124, 66, 209, 0.5);
+            transform: translateY(-12px) scale(1.05);
         }
     }
 
@@ -302,7 +344,7 @@ else:
             <div class="header-banner">
                 <div>
                     <h1>PATU AI <span class="badge-pro">v4.0 PRO</span></h1>
-                    <p>Desarrollado por <b>Jordan Rugel Martínez & Grupo 2 (Gestión de Proyectos)</b> | Docente: <b>Richard Edgar González</b></p>
+                    <p>Desarrollado por <b>Yordán Rugel Martínez & Grupo 2 (Gestión de Proyectos)</b> | Docente: <b>Richard Edgar González</b></p>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -379,26 +421,30 @@ else:
     st.write("---")
 
     # ==========================================
-    # MODO AGENTE DE VOZ AUTÓNOMO CON LOGO SALTARÍN
+    # MODO AGENTE DE VOZ AUTÓNOMO CON GATITO ILUSTRADO CSS
     # ==========================================
     if "PATU LIVE" in fase_seleccionada:
         st.subheader("🐾 Habla en Vivo con PATU (Agente de Voz Autónomo)")
-        st.caption("Desarrollado por Jordan Rugel Martínez & Grupo 2 | Curso: Gestión de Proyectos | Docente: Richard Edgar González")
+        st.caption("Desarrollado por Yordán Rugel Martínez & Grupo 2 | Curso: Gestión de Proyectos | Docente: Richard Edgar González")
 
         col_avatar, col_interaccion = st.columns([1, 2])
 
         with col_avatar:
             st.markdown('<div class="patu-holograma-box">', unsafe_allow_html=True)
-            if os.path.exists("logo.jpg"):
-                st.markdown('<img src="logo.jpg" class="patu-avatar-animado">', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div style="background:#EFE6FA; padding:20px; border-radius:50%; display:inline-block;">
-                        <h1 style="font-size:80px; margin:0;">🐱</h1>
+            # Avatar Ilustrado de Gatito Blanco en CSS Puro
+            st.markdown("""
+                <div class="cat-avatar-container">
+                    <div class="cat-head">
+                        <div class="cat-ear-left"></div>
+                        <div class="cat-ear-right"></div>
+                        <div class="cat-eye-left"></div>
+                        <div class="cat-eye-right"></div>
+                        <div class="cat-nose"></div>
                     </div>
-                """, unsafe_allow_html=True)
-            st.markdown("<h3 style='margin-top:15px; color:#7C42D1;'><b>PATU AI</b></h3>", unsafe_allow_html=True)
-            st.markdown("<small style='color:#6C3CB5;'><b>Creadores:</b> Jordan Rugel M. & Grupo 2<br><b>Docente:</b> Richard Edgar González</small>", unsafe_allow_html=True)
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<h3 style='margin-top:10px; color:#7C42D1;'><b>PATU AI</b></h3>", unsafe_allow_html=True)
+            st.markdown("<small style='color:#6C3CB5;'><b>Creadores:</b> Yordán Rugel M. & Grupo 2<br><b>Docente:</b> Richard Edgar González</small>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_interaccion:
@@ -423,7 +469,7 @@ else:
                             guardar_en_historial("PATU Agente Voz", str(comando_texto), respuesta_patu)
                             st.rerun()
 
-        # RESPUESTA Y VOZ SINTETIZADA
+        # RESPUESTA Y VOZ SINTETIZADA CON PRONUNCIACIÓN PERFECTA "YORDÁN"
         if st.session_state.res_patu_live:
             st.markdown("---")
             st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
