@@ -37,25 +37,41 @@ st.set_page_config(
 )
 
 # ==========================================
-# ESTILOS CSS AVANZADOS (UI/UX v4.0 GLASSMORPHISM)
+# ESTILOS CSS AVANZADOS (UI/UX v4.0 HARMONY GLASSMORPHISM)
 # ==========================================
 st.markdown("""
     <style>
-    /* Fondo principal con degradado suave pastel */
+    /* 1. Fondo general con degradado pastel continuo */
     .stApp { 
-        background: linear-gradient(135deg, #F9F6FC 0%, #EFE8FA 100%) !important; 
+        background: linear-gradient(135deg, #F8F5FB 0%, #EFE8FA 50%, #E6DEF7 100%) !important; 
         color: #4A3E5D !important; 
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
     
-    /* Barra lateral estilo Glassmorphism */
+    /* 2. Barra lateral estilo Glassmorphism con pulso suave */
     section[data-testid="stSidebar"] { 
-        background: rgba(240, 235, 252, 0.75) !important; 
-        backdrop-filter: blur(12px) !important;
-        border-right: 1px solid rgba(224, 211, 245, 0.6) !important; 
+        background: rgba(240, 235, 252, 0.8) !important; 
+        backdrop-filter: blur(14px) !important;
+        border-right: 1px solid rgba(224, 211, 245, 0.7) !important; 
     }
     
-    /* Typography y Títulos */
+    /* 3. Personalización de Scrollbar armónico */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #F8F5FB;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #C4B5FD;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #8259BF;
+    }
+
+    /* 4. Tipografía y Títulos Armónicos */
     h1, h2, h3, h4, label, p, span, div { 
         color: #4A3E5D !important; 
     }
@@ -65,14 +81,14 @@ st.markdown("""
         letter-spacing: -0.5px;
     }
     
-    /* Banner de Encabezado Principal */
+    /* 5. Banner de Encabezado Principal */
     .header-banner {
         background: linear-gradient(120deg, #8259BF 0%, #8B93FF 50%, #FF94C2 100%);
         padding: 24px 32px;
         border-radius: 20px;
         color: white !important;
         box-shadow: 0 10px 25px rgba(130, 89, 191, 0.2);
-        margin-bottom: 25px;
+        margin-bottom: 20px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -82,15 +98,32 @@ st.markdown("""
         margin: 0;
     }
     
-    /* Tarjeta Ficha Resumen del Paciente */
+    /* 6. Indicador de pulso verde en vivo */
+    .status-pulse {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background-color: #2ECC71;
+        box-shadow: 0 0 0 rgba(46, 204, 113, 0.4);
+        animation: pulse 2s infinite;
+        margin-right: 6px;
+    }
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7); }
+        70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+    }
+    
+    /* 7. Ficha Resumen del Paciente Activo */
     .ficha-paciente {
-        background: rgba(255, 255, 255, 0.85);
+        background: rgba(255, 255, 255, 0.9);
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(224, 211, 245, 0.8);
+        border: 1px solid rgba(224, 211, 245, 0.9);
         border-radius: 16px;
         padding: 16px 24px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(130, 89, 191, 0.05);
+        box-shadow: 0 4px 15px rgba(130, 89, 191, 0.06);
         display: flex;
         justify-content: space-around;
         align-items: center;
@@ -100,7 +133,7 @@ st.markdown("""
     }
     .ficha-item small {
         color: #8259BF;
-        font-weight: 600;
+        font-weight: 700;
         text-transform: uppercase;
         font-size: 0.75rem;
     }
@@ -110,7 +143,7 @@ st.markdown("""
         color: #4A3E5D;
     }
 
-    /* Botones Interactivos en Gradiente Pastel */
+    /* 8. Botones en Gradiente Pastel con Efecto Elevación */
     div.stButton > button { 
         background: linear-gradient(135deg, #8B93FF 0%, #794BB6 100%) !important; 
         color: #FFFFFF !important; 
@@ -127,9 +160,9 @@ st.markdown("""
         box-shadow: 0 6px 20px rgba(255, 148, 194, 0.4) !important;
     }
     
-    /* Cajas de Entrada (Inputs y Textareas) */
+    /* 9. Entradas de Texto y Selectores */
     .stTextInput input, .stTextArea textarea, .stSelectbox select { 
-        background-color: rgba(255, 255, 255, 0.9) !important; 
+        background-color: rgba(255, 255, 255, 0.95) !important; 
         color: #4A3E5D !important; 
         border: 1.5px solid #E0D3F5 !important; 
         border-radius: 12px !important; 
@@ -140,14 +173,15 @@ st.markdown("""
         box-shadow: 0 0 0 3px rgba(139, 147, 255, 0.2) !important;
     }
 
-    /* Pestañas (Tabs) Estilizadas estilo Pill */
+    /* 10. Pestañas en Estilo Píldora Reorganizadas */
     button[data-baseweb="tab"] {
         background-color: transparent !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         font-weight: 600 !important;
         color: #5C4A72 !important;
-        padding: 8px 16px !important;
+        padding: 10px 18px !important;
         border: none !important;
+        transition: all 0.2s ease !important;
     }
     button[aria-selected="true"] {
         background-color: #8259BF !important;
@@ -155,7 +189,16 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(130, 89, 191, 0.25) !important;
     }
 
-    /* Badges y Tarjetas de Resultados */
+    /* 11. Tarjeta de Resultado con Borde Acentuado */
+    .resultado-ia { 
+        background-color: #FFFFFF !important; 
+        padding: 28px !important; 
+        border-radius: 18px !important; 
+        border: 1px solid #E0D3F5 !important; 
+        border-left: 6px solid #8259BF !important; 
+        margin-top: 20px !important; 
+        box-shadow: 0px 8px 24px rgba(130, 89, 191, 0.08) !important; 
+    }
     .badge-pro { 
         background: rgba(255, 255, 255, 0.25); 
         color: #FFFFFF !important; 
@@ -166,19 +209,11 @@ st.markdown("""
         backdrop-filter: blur(5px);
         border: 1px solid rgba(255, 255, 255, 0.4);
     }
-    .resultado-ia { 
-        background-color: #FFFFFF; 
-        padding: 28px; 
-        border-radius: 18px; 
-        border: 1px solid #E0D3F5; 
-        margin-top: 20px; 
-        box-shadow: 0px 8px 24px rgba(130, 89, 191, 0.08); 
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# ESTADOS DE SESIÓN (PERSISTENCIA Y CONTROL)
+# ESTADOS DE SESIÓN Y DATOS DEL PACIENTE
 # ==========================================
 if "user" not in st.session_state:
     st.session_state.user = None
@@ -189,17 +224,21 @@ if "historial_consultas" not in st.session_state:
 if "caso_activo" not in st.session_state:
     st.session_state.caso_activo = False
 
-# Datos dinámicos de la Ficha del Paciente Activo
+# Datos dinámicos para el Dashboard del Paciente
+if "paciente_nombre" not in st.session_state:
+    st.session_state.paciente_nombre = "Paciente Anónimo"
 if "paciente_edad" not in st.session_state:
     st.session_state.paciente_edad = "--"
 if "paciente_etapa" not in st.session_state:
     st.session_state.paciente_etapa = "--"
+if "paciente_riesgo" not in st.session_state:
+    st.session_state.paciente_riesgo = "Bajo"
 
 # Resultados Persistentes
 for res_key in [
     "res_analizador_clinico", "res_buscador_pruebas", "res_generador_informes",
     "res_analizador_sesiones", "res_psicoeducacion", "res_corrector_psicometrico",
-    "doc_informe_descargable", "doc_psico_descargable"
+    "res_plan_tratamiento", "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable"
 ]:
     if res_key not in st.session_state:
         st.session_state[res_key] = None
@@ -233,12 +272,14 @@ def guardar_en_historial(modulo, entrada, resultado):
 
 def limpiar_caso_actual():
     st.session_state.caso_activo = False
+    st.session_state.paciente_nombre = "Paciente Anónimo"
     st.session_state.paciente_edad = "--"
     st.session_state.paciente_etapa = "--"
+    st.session_state.paciente_riesgo = "Bajo"
     for res_key in [
         "res_analizador_clinico", "res_buscador_pruebas", "res_generador_informes",
         "res_analizador_sesiones", "res_psicoeducacion", "res_corrector_psicometrico",
-        "doc_informe_descargable", "doc_psico_descargable"
+        "res_plan_tratamiento", "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable"
     ]:
         st.session_state[res_key] = None
     st.session_state.texto_narrativa = ""
@@ -310,7 +351,7 @@ else:
     es_premium = user.get("es_premium", False)
     puede_consultar = es_premium or (consultas_usadas < limite_gratis) or st.session_state.caso_activo
 
-    # BANNER SUPERIOR DE BIENVENIDA
+    # BANNER SUPERIOR
     col_a, col_b = st.columns([1, 5])
     with col_a:
         mostrar_logo(width=120)
@@ -319,26 +360,31 @@ else:
             <div class="header-banner">
                 <div>
                     <h1>PATU AI <span class="badge-pro">v4.0 PRO</span></h1>
-                    <p>Bienvenido de nuevo, <b>{user.get('nombre', 'Doctor(a)')}</b></p>
+                    <p>Bienvenido, <b>{user.get('nombre', 'Doctor(a)')}</b> — Asistente Diagnóstico</p>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
 
-    # FICHA CLINICA DEL PACIENTE ACTIVO
+    # DASHBOARD INTERACTIVO DEL PACIENTE ACTIVO
     if st.session_state.caso_activo:
+        color_riesgo = "#2ECC71" if st.session_state.paciente_riesgo == "Bajo" else "#F1C40F" if st.session_state.paciente_riesgo == "Medio" else "#E74C3C"
         st.markdown(f'''
             <div class="ficha-paciente">
                 <div class="ficha-item">
-                    <small>Estado del Caso</small>
-                    <div>🟢 Activo</div>
+                    <small>Estado</small>
+                    <div><span class="status-pulse"></span>Activo</div>
                 </div>
                 <div class="ficha-item">
-                    <small>Edad Registrada</small>
-                    <div>{st.session_state.paciente_edad} años</div>
+                    <small>Paciente</small>
+                    <div>{st.session_state.paciente_nombre}</div>
                 </div>
                 <div class="ficha-item">
-                    <small>Etapa de Desarrollo</small>
-                    <div>{st.session_state.paciente_etapa}</div>
+                    <small>Edad / Etapa</small>
+                    <div>{st.session_state.paciente_edad} años ({st.session_state.paciente_etapa})</div>
+                </div>
+                <div class="ficha-item">
+                    <small>Riesgo Estimado</small>
+                    <div style="color: {color_riesgo};">{st.session_state.paciente_riesgo}</div>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -356,7 +402,7 @@ else:
             st.progress(restantes / limite_gratis)
 
         if st.session_state.caso_activo:
-            if st.button("🔄 Nuevo Paciente / Reset"):
+            if st.button("🔄 Reiniciar Paciente"):
                 limpiar_caso_actual()
                 st.rerun()
 
@@ -372,9 +418,11 @@ else:
         if link_pago:
             st.link_button("🚀 Recargar +10 Créditos por S/. 2.00", link_pago)
 
+    # PESTAÑAS MEJORADAS
     tabs = st.tabs([
         "📋 Analizador Clínico", 
         "🧪 Buscador de Pruebas", 
+        "🎯 Plan de Tratamiento", 
         "📄 Generador de Informes", 
         "🎙️ Analizador de Sesiones", 
         "📚 Psicoeducación", 
@@ -387,22 +435,23 @@ else:
     # ==========================================
     with tabs[0]:
         st.subheader("📋 Diagnóstico Multiaxial, Brechas e Hipótesis")
-        col1, col2 = st.columns(2)
-        with col1:
-            edad = st.number_input("🎂 Edad del Paciente (años):", min_value=1, max_value=120, value=25, key="ac_edad")
-        with col2:
-            etapa = st.selectbox("👶 / 🧑 Etapa de Desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
+        
+        c_p1, c_p2, c_p3 = st.columns([2, 1, 1])
+        with c_p1:
+            nombre_input = st.text_input("👤 Nombre / Iniciales:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "Paciente J.P.", key="ac_nombre")
+        with c_p2:
+            edad = st.number_input("🎂 Edad (años):", min_value=1, max_value=120, value=25, key="ac_edad")
+        with c_p3:
+            etapa = st.selectbox("👶 / 🧑 Etapa:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
+
+        nivel_riesgo = st.select_slider("⚠️ Nivel de Riesgo Inicial Detectado:", options=["Bajo", "Medio", "Alto"], key="ac_riesgo")
 
         st.write("---")
-        st.write("📷 **1. Cargar Archivos o Documentos:**")
-        archivo = st.file_uploader(
-            "Sube fichas o documentos (.docx, .txt):",
-            type=["docx", "txt"],
-            key="uploader_ac"
-        )
-
-        st.write("🎙️ **2. Nota de Voz (Máximo 25 MB):**")
-        audio_input = st.audio_input("Grabar notas de voz de la sesión:", key="audio_voice_ac")
+        col_f1, col_f2 = st.columns(2)
+        with col_f1:
+            archivo = st.file_uploader("📷 Cargar ficha o informe (.docx, .txt):", type=["docx", "txt"], key="uploader_ac")
+        with col_f2:
+            audio_input = st.audio_input("🎙️ Dictar nota de voz (Máx. 25 MB):", key="audio_voice_ac")
 
         if audio_input is not None:
             audio_bytes = audio_input.getvalue()
@@ -417,14 +466,14 @@ else:
                         st.error(f"Error al transcribir: {transcripcion}")
 
         instrucciones = st.text_area(
-            "✍️ **3. Narrativa del Motivo de Consulta:**",
+            "✍️ Narrativa del Motivo de Consulta y Sintomatología:",
             value=st.session_state.texto_narrativa,
-            placeholder="Describe la sintomatología o motivo de consulta...",
+            placeholder="Escribe o dicta el motivo de consulta...",
             key="txt_ac"
         )
         st.session_state.texto_narrativa = instrucciones
 
-        if st.button("Procesar Análisis Clínico", key="btn_ac"):
+        if st.button("Procesar Análisis Clínico Completo", key="btn_ac"):
             if not puede_consultar:
                 st.error("❌ Créditos agotados. Por favor realiza una recarga.")
             else:
@@ -436,17 +485,19 @@ else:
 
                 if archivo or texto_a_procesar:
                     with st.spinner("Procesando caso clínico..."):
-                        narrativa_final = f"Paciente de {edad} años ({etapa}). Motivo: {texto_a_procesar}"
+                        narrativa_final = f"Paciente: {nombre_input}, {edad} años ({etapa}). Riesgo: {nivel_riesgo}. Motivo: {texto_a_procesar}"
                         
                         if archivo:
-                            res = procesar_analisis(archivo, f"Edad del paciente: {edad} años ({etapa}). Motivo: {texto_a_procesar}")
+                            res = procesar_analisis(archivo, f"Paciente: {nombre_input}, {edad} años ({etapa}). Motivo: {texto_a_procesar}")
                         else:
                             res = analizar_caso_inicial(narrativa_final, api_key_env)
                         
                         if res and not res.startswith("❌"):
                             st.session_state.res_analizador_clinico = res
+                            st.session_state.paciente_nombre = nombre_input
                             st.session_state.paciente_edad = edad
                             st.session_state.paciente_etapa = etapa
+                            st.session_state.paciente_riesgo = nivel_riesgo
                             guardar_en_historial("Analizador Clínico", narrativa_final, res)
                             
                             if not st.session_state.caso_activo:
@@ -473,17 +524,17 @@ else:
         st.subheader("🧪 Batería Psicométrica Recomendada")
         c1, c2 = st.columns(2)
         with c1:
-            edad_bp = st.number_input("Edad exacta:", min_value=1, max_value=120, value=25, key="bp_edad")
+            edad_bp = st.number_input("Edad exacta:", min_value=1, max_value=120, value=st.session_state.paciente_edad if st.session_state.paciente_edad != "--" else 25, key="bp_edad")
         with c2:
-            etapa_bp = st.selectbox("Etapa:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="bp_etapa")
+            etapa_bp = st.selectbox("Etapa de desarrollo:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="bp_etapa")
         
-        caso_bp = st.text_area("Sintomatología a evaluar:", placeholder="Ej: Ansiedad, inatención, rasgos de personalidad...", key="bp_caso")
+        caso_bp = st.text_area("Sintomatología o variables a evaluar:", placeholder="Ej: Sintomatología depresiva, inatención, fobia social...", key="bp_caso")
 
-        if st.button("Buscar Pruebas", key="btn_bp"):
+        if st.button("Filtrar Batería Psicométrica", key="btn_bp"):
             if not puede_consultar and not st.session_state.caso_activo:
                 st.error("❌ Créditos agotados.")
             elif caso_bp.strip():
-                with st.spinner("Seleccionando instrumentos normados..."):
+                with st.spinner("Seleccionando instrumentos normados por edad..."):
                     res = obtener_pruebas_psicometricas(caso_bp, edad_bp, etapa_bp, api_key_env)
                     if res and not res.startswith("❌"):
                         st.session_state.res_buscador_pruebas = res
@@ -500,23 +551,69 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 3. GENERADOR DE INFORMES
+    # 3. PLAN DE TRATAMIENTO (NUEVO MÓDULO INTUITIVO)
     # ==========================================
     with tabs[2]:
+        st.subheader("🎯 Diseñador de Plan de Intervención y Objetivos Terapéuticos")
+        col_t1, col_t2 = st.columns(2)
+        with col_t1:
+            enfoque_terapia = st.selectbox("Modelo / Enfoque Terapéutico:", ["Cognitivo-Conductual (TCC)", "Sistémico-Familiar", "Terapia de Aceptación y Compromiso (ACT)", "Humanista-Existencial"], key="pt_enfoque")
+        with col_t2:
+            num_sesiones = st.slider("Estimación de Sesiones del Plan:", 4, 24, 12, key="pt_sesiones")
+
+        diag_plan = st.text_input("Diagnóstico o Problema Blanco:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "", placeholder="Ej: Trastorno de Ansiedad Generalizada", key="pt_diag")
+        sintomas_plan = st.text_area("Síntomas principales y metas descritas por el paciente:", placeholder="Describe metas clínicas...", key="pt_sintomas")
+
+        if st.button("Diseñar Plan de Tratamiento", key="btn_plan"):
+            if not puede_consultar and not st.session_state.caso_activo:
+                st.error("❌ Créditos agotados.")
+            elif diag_plan.strip() or sintomas_plan.strip():
+                with st.spinner("Estructurando metas, fases y tareas para casa..."):
+                    # Generación usando la lógica central
+                    prompt_plan = f"Crea un plan de tratamiento psicológico de {num_sesiones} sesiones bajo el enfoque {enfoque_terapia} para el diagnóstico/caso: {diag_plan}. Síntomas y metas: {sintomas_plan}. Incluye: 1. Objetivos a corto, mediano y largo plazo. 2. Estructura por fases de intervención. 3. Técnicas recomendadas. 4. Tareas psicoeducativas o para la casa."
+                    res_plan = analizar_caso_inicial(prompt_plan, api_key_env)
+                    
+                    if res_plan and not res_plan.startswith("❌"):
+                        st.session_state.res_plan_tratamiento = res_plan
+                        st.session_state.doc_plan_descargable = crear_documento_word(f"Plan de Tratamiento - {st.session_state.paciente_nombre}", res_plan)
+                        guardar_en_historial("Plan de Tratamiento", f"Enfoque: {enfoque_terapia}, Caso: {diag_plan}", res_plan)
+                        st.rerun()
+                    else:
+                        st.error(res_plan)
+            else:
+                st.warning("Completa el diagnóstico o metas clínicas.")
+
+        if st.session_state.res_plan_tratamiento:
+            if st.session_state.doc_plan_descargable:
+                st.download_button(
+                    label="📥 Descargar Plan de Tratamiento (.docx)",
+                    data=st.session_state.doc_plan_descargable,
+                    file_name=f"Plan_Tratamiento_{st.session_state.paciente_nombre}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    key="btn_dl_plan"
+                )
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_plan_tratamiento)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # ==========================================
+    # 4. GENERADOR DE INFORMES
+    # ==========================================
+    with tabs[3]:
         st.subheader("📄 Redactor de Informes Clínicos")
         col_inf1, col_inf2 = st.columns(2)
         with col_inf1:
-            nombre_p = st.text_input("Paciente / Iniciales:", value="J.P.", key="inf_nom")
-            edad_p = st.text_input("Edad:", value="25 años", key="inf_edad")
+            nombre_p = st.text_input("Paciente / Iniciales:", value=st.session_state.paciente_nombre, key="inf_nom")
+            edad_p = st.text_input("Edad:", value=str(st.session_state.paciente_edad), key="inf_edad")
             genero_p = st.text_input("Género:", value="Femenino", key="inf_gen")
             ocupacion_p = st.text_input("Ocupación:", value="Estudiante", key="inf_ocup")
         with col_inf2:
-            enfoque_p = st.selectbox("Enfoque:", ["Clínico", "Educativo", "Neuropsicológico"], key="inf_enf")
-            plantilla_docx = st.file_uploader("Modelo de Informe (.docx) [Opcional]:", type=["docx"], key="inf_plantilla")
+            enfoque_p = st.selectbox("Enfoque del Informe:", ["Clínico", "Educativo", "Neuropsicológico"], key="inf_enf")
+            plantilla_docx = st.file_uploader("Sube tu modelo (.docx) [Opcional]:", type=["docx"], key="inf_plantilla")
 
         motivo_p = st.text_area("Motivo de Consulta:", key="inf_motivo")
-        problema_p = st.text_area("Problema Actual:", key="inf_prob")
-        pruebas_p = st.text_area("Pruebas Aplicadas:", key="inf_pruebas")
+        problema_p = st.text_area("Problema Actual y Antecedentes:", key="inf_prob")
+        pruebas_p = st.text_area("Pruebas Aplicadas y Puntuaciones:", key="inf_pruebas")
         obs_p = st.text_area("Observaciones Conductuales:", key="inf_obs")
         diag_p = st.text_area("Diagnóstico / Conclusiones:", key="inf_diag")
 
@@ -524,7 +621,7 @@ else:
             if not puede_consultar and not st.session_state.caso_activo:
                 st.error("❌ Créditos agotados.")
             elif motivo_p.strip() or problema_p.strip():
-                with st.spinner("Redactando informe profesional..."):
+                with st.spinner("Redactando informe formal..."):
                     plantilla_texto = extraer_texto_docx(plantilla_docx) if plantilla_docx else ""
                     datos_dict = {
                         "nombre": nombre_p, "edad": edad_p, "genero": genero_p, "ocupacion": ocupacion_p,
@@ -557,9 +654,9 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 4. ANALIZADOR DE SESIONES
+    # 5. ANALIZADOR DE SESIONES
     # ==========================================
-    with tabs[3]:
+    with tabs[4]:
         st.subheader("🎙️ Análisis de Transcripciones y Sesiones")
         archivo_sesion = st.file_uploader("Audio de la sesión (Máximo 25 MB):", type=["mp3", "wav", "m4a"], key="uploader_sesion")
         texto_sesion = st.text_area("O pega la transcripción escrita de la sesión:", key="txt_sesion")
@@ -591,12 +688,12 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 5. PSICOEDUCACIÓN
+    # 6. PSICOEDUCACIÓN
     # ==========================================
-    with tabs[4]:
+    with tabs[5]:
         st.subheader("📚 Guías y Folletos Psicoeducativos")
         diag_base = st.text_input("Condición o Diagnóstico:", placeholder="Ej: TDAH, Trastorno de Ansiedad...", key="psico_diag")
-        destinatario = st.selectbox("Destinatario:", ["Paciente", "Familiares / Cuidadores", "Docentes"], key="psico_dest")
+        destinatario = st.selectbox("Destinatario del Material:", ["Paciente", "Familiares / Cuidadores", "Docentes / Colegio"], key="psico_dest")
 
         if st.button("Generar Guía", key="btn_psico"):
             if not puede_consultar and not st.session_state.caso_activo:
@@ -628,16 +725,16 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 6. CORRECTOR PSICOMÉTRICO
+    # 7. CORRECTOR PSICOMÉTRICO
     # ==========================================
-    with tabs[5]:
+    with tabs[6]:
         st.subheader("📝 Interpretación e Integración de Baremos")
         col_cp1, col_cp2 = st.columns(2)
         with col_cp1:
-            nombre_prueba = st.text_input("Prueba aplicada:", placeholder="Ej: WAIS-IV, BDI-II...", key="cp_nombre")
+            nombre_prueba = st.text_input("Prueba aplicada:", placeholder="Ej: WAIS-IV, BDI-II, MCHAT...", key="cp_nombre")
         with col_cp2:
             edad_cp = st.number_input("Edad del evaluado:", min_value=1, max_value=120, value=25, key="cp_edad")
-        puntajes_texto = st.text_area("Puntuaciones y Percentiles:", key="cp_puntajes")
+        puntajes_texto = st.text_area("Puntuaciones y Percentiles directos:", key="cp_puntajes")
 
         if st.button("Interpretar Baremos", key="btn_cp"):
             if not puede_consultar and not st.session_state.caso_activo:
@@ -660,9 +757,9 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 7. MI HISTORIAL
+    # 8. MI HISTORIAL
     # ==========================================
-    with tabs[6]:
+    with tabs[7]:
         st.subheader("📂 Registro Histórico de Consultas")
         historial_bd = obtener_historial_usuario(user["id"], limite=100)
 
