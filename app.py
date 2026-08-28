@@ -33,9 +33,6 @@ from engine import (
     procesar_comando_agente_patu
 )
 
-# ==========================================
-# CONFIGURACIÓN DE PÁGINA
-# ==========================================
 st.set_page_config(
     page_title="PATU AI - Workstation v4.0 PRO",
     page_icon="🐾",
@@ -43,9 +40,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==========================================
-# ESTILOS CSS REVOLUCIONARIOS
-# ==========================================
 st.markdown("""
     <style>
     .stApp { 
@@ -94,15 +88,6 @@ st.markdown("""
     div.stButton > button:hover {
         background: linear-gradient(135deg, #FF85B8 0%, #8A93FF 100%) !important;
         transform: translateY(-2px);
-    }
-    
-    .caja-paso {
-        background: #FFFFFF !important;
-        border: 1.5px solid #D8C7F0 !important;
-        border-radius: 14px !important;
-        padding: 18px !important;
-        margin-bottom: 15px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
     }
 
     .resultado-ia { 
@@ -193,9 +178,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# ESTADOS DE SESIÓN
-# ==========================================
 if "user" not in st.session_state:
     st.session_state.user = None
 if "texto_narrativa" not in st.session_state:
@@ -205,7 +187,6 @@ if "historial_consultas" not in st.session_state:
 if "caso_activo" not in st.session_state:
     st.session_state.caso_activo = False
 
-# CONTROL DE INTERACCIÓN DE VOZ CONTINUA
 if "primera_interaccion_patu" not in st.session_state:
     st.session_state.primera_interaccion_patu = True
 
@@ -230,17 +211,6 @@ for res_key in [
 ]:
     if res_key not in st.session_state:
         st.session_state[res_key] = None
-
-query_params = st.query_params
-if query_params.get("pago") == "exitoso":
-    user_id_pago = query_params.get("user_id")
-    if user_id_pago:
-        exito_recarga = recargar_creditos_usuario(user_id_pago, creditos_a_sumar=10)
-        if exito_recarga:
-            st.success("🎉 ¡Pago confirmado! Se han añadido +10 créditos a tu cuenta.")
-            if st.session_state.user and str(st.session_state.user["id"]) == str(user_id_pago):
-                st.session_state.user = obtener_usuario_por_id(user_id_pago)
-        st.query_params.clear()
 
 def mostrar_logo(width=130):
     if os.path.exists("logo.jpg"):
@@ -328,10 +298,6 @@ else:
         st.session_state.user = user
 
     user = st.session_state.user
-    limite_gratis = 4
-    consultas_usadas = user.get("consultas_usadas", 0)
-    es_premium = user.get("es_premium", False)
-    puede_consultar = es_premium or (consultas_usadas < limite_gratis) or st.session_state.caso_activo
 
     # BANNER SUPERIOR
     col_a, col_b = st.columns([1, 5])
@@ -350,14 +316,6 @@ else:
     # FICHA DEL PACIENTE ACTIVO
     if st.session_state.caso_activo:
         color_riesgo = "#2ECC71" if st.session_state.paciente_riesgo == "Bajo" else "#F1C40F" if st.session_state.paciente_riesgo == "Medio" else "#E74C3C"
-        
-        if st.session_state.paciente_avance < 30:
-            st.session_state.paciente_semaforo = "🟡 Evaluación / Encuadre"
-        elif st.session_state.paciente_avance < 80:
-            st.session_state.paciente_semaforo = "🟢 Intervención Activa"
-        else:
-            st.session_state.paciente_semaforo = "🔵 Fase de Alta / Cierre"
-
         st.markdown(f'''
             <div class="ficha-paciente-card">
                 <div style="display:flex; justify-content:space-around; text-align:center; align-items:center;">
@@ -368,25 +326,11 @@ else:
                 </div>
             </div>
         ''', unsafe_allow_html=True)
-        
-        col_av1, col_av2 = st.columns([4, 1])
-        with col_av1:
-            st.session_state.paciente_avance = st.slider("📊 Porcentaje de Avance y Adherencia del Paciente:", 0, 100, st.session_state.paciente_avance)
-        with col_av2:
-            st.metric(label="Avance Clínico", value=f"{st.session_state.paciente_avance}%")
 
     # BARRA LATERAL
     with st.sidebar:
         st.markdown(f"👤 **Usuario:** `{user.get('nombre', 'Usuario')}`")
-        if es_premium:
-            st.markdown("🌟 **Plan:** `PREMIUM UNLIMITED`")
-        else:
-            st.markdown("🌱 **Plan:** `FREE TRIAL`")
-            st.markdown("---")
-            restantes = max(0, limite_gratis - consultas_usadas)
-            st.write(f"📊 **Créditos libres:** {restantes}/{limite_gratis}")
-            st.progress(restantes / limite_gratis)
-
+        st.markdown("🌟 **Modo Agente:** `AUTÓNOMO EN VIVO`")
         if st.session_state.caso_activo:
             if st.button("🔄 Reiniciar / Nuevo Paciente"):
                 limpiar_caso_actual()
@@ -398,13 +342,7 @@ else:
                 del st.session_state[key]
             st.rerun()
 
-    if not puede_consultar and not st.session_state.res_analizador_clinico:
-        st.warning("⚠️ Has consumido tus créditos libres de evaluación.")
-        link_pago, msg_pago = crear_preferencia_pago(user["id"], user["email"])
-        if link_pago:
-            st.link_button("🚀 Recargar +10 Créditos por S/. 2.00", link_pago)
-
-    # NAVEGACIÓN EN 3 FASES + MODO PATU LIVE
+    # NAVEGACIÓN EN FASES + AGENTE AUTÓNOMO
     fase_seleccionada = st.radio(
         "📌 **Selecciona la Fase de Trabajo Clínico:**",
         [
@@ -419,11 +357,11 @@ else:
     st.write("---")
 
     # ==========================================
-    # MODO AGENTE DE VOZ AUTÓNOMO
+    # MODO AGENTE AUTÓNOMO
     # ==========================================
     if "PATU LIVE" in fase_seleccionada:
-        st.subheader("🐾 Habla en Vivo con PATU (Agente de Voz Autónomo)")
-        st.caption("Interacción de voz en tiempo real. Presiona el micrófono y habla naturalmente.")
+        st.subheader("🐾 Entorno de Control Autónomo de PATU AI")
+        st.caption("Pídele a PATU que ejecute tareas en el entorno web, hable con el público o descargue documentos por voz.")
 
         col_avatar, col_interaccion = st.columns([1, 2])
 
@@ -446,21 +384,20 @@ else:
         with col_interaccion:
             st.markdown("### 🎙️ Micrófono de Control Autónomo")
             
-            # Botón para detener la voz del navegador inmediatamente si deseas interrumpir
-            if st.button("🛑 Interrumpir Voz", key="btn_stop_speech"):
+            if st.button("🛑 Silenciar / Detener Voz", key="btn_stop_speech"):
                 st.components.v1.html("<script>window.speechSynthesis.cancel();</script>", height=0)
 
-            audio_comando = st.audio_input("Presiona el micrófono y háblale a PATU:", key="mic_agente_patu")
+            audio_comando = st.audio_input("Presiona el micrófono y ordénale o pregúntale a PATU:", key="mic_agente_patu")
 
             if audio_comando is not None:
                 audio_bytes_cmd = audio_comando.getvalue()
                 if st.session_state.get("last_agent_audio") != audio_bytes_cmd:
-                    with st.spinner("🐱 PATU está escuchando tu voz y procesando la orden..."):
+                    with st.spinner("🐱 PATU está escuchando y ejecutando la orden..."):
                         comando_texto = transcribir_audio_groq(audio_comando, api_key_env)
                         
                         if comando_texto and not str(comando_texto).startswith("Error"):
                             st.session_state["last_agent_audio"] = audio_bytes_cmd
-                            contexto_paciente = f"Paciente: {st.session_state.paciente_nombre}, Edad: {st.session_state.paciente_edad}, Riesgo: {st.session_state.paciente_riesgo}"
+                            contexto_paciente = f"Paciente: {st.session_state.paciente_nombre}, Edad: {st.session_state.paciente_edad}"
                             
                             respuesta_patu = procesar_comando_agente_patu(
                                 str(comando_texto), 
@@ -470,7 +407,6 @@ else:
                             )
                             
                             st.session_state.primera_interaccion_patu = False
-                            
                             st.session_state.res_patu_live = {
                                 "pregunta": str(comando_texto),
                                 "respuesta": respuesta_patu
@@ -478,19 +414,30 @@ else:
                             guardar_en_historial("PATU Agente Voz", str(comando_texto), respuesta_patu)
                             st.rerun()
 
-        # RESPUESTA Y VOZ SINTETIZADA HUMANA CON SELECCIÓN DE VOZ MEJORADA Y CONTROL DE INTERRUPCIÓN
+        # MANEJO Y RESPUESTA DEL AGENTE AUTÓNOMO EN PANTALLA
         if st.session_state.res_patu_live:
             st.markdown("---")
             st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-            st.markdown(f"🗣️ **Tú dijiste:** *\"{st.session_state.res_patu_live['pregunta']}\"*")
-            st.markdown(f"🐾 **PATU AI responde:**")
-            st.markdown(st.session_state.res_patu_live['respuesta'])
+            st.markdown(f"🗣️ **Orden o Pregunta:** *\"{st.session_state.res_patu_live['pregunta']}\"*")
             
-            texto_voz_limpio = st.session_state.res_patu_live['respuesta'].replace('"', "'").replace('\n', ' ').replace('#', '').replace('*', '')
+            respuesta_raw = st.session_state.res_patu_live['respuesta']
+            
+            # SI LA RESPUESTA CONTIENE UNA ACCIÓN DE DESCARGA
+            if "[ACCION:DESCARGAR]" in respuesta_raw:
+                st.success("⚡ **Acción Autónoma Ejecutada:** Preparando descarga del documento en tiempo real.")
+                contenido_doc = respuesta_raw.replace("[ACCION:DESCARGAR]", "")
+                doc_bytes = crear_documento_word("Documento Autónomo PATU AI", contenido_doc)
+                st.download_button("📥 Haz clic aquí para descargar tu archivo en Word", data=doc_bytes, file_name="Documento_PATU_AI.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                st.markdown(contenido_doc)
+            else:
+                st.markdown(f"🐾 **PATU AI responde / ejecuta:**")
+                st.markdown(respuesta_raw.replace("[ACCION:DEMOSTRACION]", ""))
+
+            # SÍNTESIS DE VOZ EN TIEMPO REAL
+            texto_voz_limpio = respuesta_raw.replace("[ACCION:DESCARGAR]", "").replace("[ACCION:DEMOSTRACION]", "").replace('"', "'").replace('\n', ' ').replace('#', '').replace('*', '')
             oraciones = [s.strip() for s in texto_voz_limpio.split('.') if len(s.strip()) > 5]
-            resumen_voz = ". ".join(oraciones[:2]) if len(oraciones) >= 2 else (oraciones[0] if len(oraciones) == 1 else "Proceso completado.")
+            resumen_voz = ". ".join(oraciones[:2]) if len(oraciones) >= 2 else (oraciones[0] if len(oraciones) == 1 else "Acción ejecutada.")
             
-            # SCRIPT MEJORADO: Cancela voces previas e intenta seleccionar la voz femenina en español más natural disponible
             js_code = f"""
                 <script>
                 window.speechSynthesis.cancel();
@@ -499,22 +446,18 @@ else:
                 msg.rate = 1.02;
                 msg.pitch = 1.15;
 
-                function cargarVozHumana() {{
+                function cargarVoz() {{
                     var voices = window.speechSynthesis.getVoices();
-                    var vozEspanol = voices.find(v => v.lang.includes('es') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Sabina') || v.name.includes('Helena') || v.name.includes('Monica')));
-                    if (!vozEspanol) {{
-                        vozEspanol = voices.find(v => v.lang.includes('es'));
-                    }}
-                    if (vozEspanol) {{
-                        msg.voice = vozEspanol;
-                    }}
+                    var vozEsp = voices.find(v => v.lang.includes('es') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Sabina') || v.name.includes('Helena')));
+                    if (!vozEsp) vozEsp = voices.find(v => v.lang.includes('es'));
+                    if (vozEsp) msg.voice = vozEsp;
                     window.speechSynthesis.speak(msg);
                 }}
 
                 if (window.speechSynthesis.getVoices().length !== 0) {{
-                    cargarVozHumana();
+                    cargarVoz();
                 }} else {{
-                    window.speechSynthesis.onvoiceschanged = cargarVozHumana;
+                    window.speechSynthesis.onvoiceschanged = cargarVoz;
                 }}
                 </script>
             """
@@ -526,7 +469,6 @@ else:
     # ==========================================
     elif "FASE 1" in fase_seleccionada:
         st.subheader("🔬 Fase 1: Diagnóstico Multiaxial y Estructura Familiar")
-        
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             btn_mod1 = st.button("📋 1. Analizador Clínico & Riesgo", use_container_width=True)
@@ -538,15 +480,11 @@ else:
         if "sub_f1_active" not in st.session_state:
             st.session_state.sub_f1_active = "analizador"
 
-        if btn_mod1:
-            st.session_state.sub_f1_active = "analizador"
-        elif btn_mod2:
-            st.session_state.sub_f1_active = "genograma"
-        elif btn_mod3:
-            st.session_state.sub_f1_active = "pruebas"
+        if btn_mod1: st.session_state.sub_f1_active = "analizador"
+        elif btn_mod2: st.session_state.sub_f1_active = "genograma"
+        elif btn_mod3: st.session_state.sub_f1_active = "pruebas"
 
         if st.session_state.sub_f1_active == "analizador":
-            st.markdown("<div class='caja-paso'><b>PASO 1: Datos Generales del Paciente</b></div>", unsafe_allow_html=True)
             c_p1, c_p2, c_p3 = st.columns([2, 1, 1])
             with c_p1:
                 nombre_input = st.text_input("👤 Paciente / Iniciales:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "Paciente J.P.", key="ac_nombre")
@@ -555,71 +493,21 @@ else:
             with c_p3:
                 etapa = st.selectbox("👶 / 🧑 Etapa:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
 
-            st.markdown("<div class='caja-paso'><b>PASO 2: Insumos de Consulta (Voz, Archivo o Texto)</b></div>", unsafe_allow_html=True)
-            col_f1, col_f2 = st.columns(2)
-            with col_f1:
-                archivo = st.file_uploader("📷 Cargar ficha o documento (.docx, .txt):", type=["docx", "txt"], key="uploader_ac")
-            with col_f2:
-                audio_input = st.audio_input("🎙️ Dictar nota de voz (Máx. 25 MB):", key="audio_voice_ac")
-
-            if audio_input is not None:
-                audio_bytes = audio_input.getvalue()
-                if st.session_state.get("last_audio_bytes_ac") != audio_bytes:
-                    with st.spinner("Transcribiendo audio..."):
-                        transcripcion = transcribir_audio_groq(audio_input, api_key_env)
-                        if transcripcion and not str(transcripcion).startswith("Error"):
-                            st.session_state.texto_narrativa = str(transcripcion).strip()
-                            st.session_state["last_audio_bytes_ac"] = audio_bytes
-                            st.success("✅ Transcripción cargada.")
-
             instrucciones = st.text_area("✍️ Narrativa del Motivo de Consulta y Sintomatología:", value=st.session_state.texto_narrativa, placeholder="Escribe o dicta el motivo de consulta...", key="txt_ac")
             st.session_state.texto_narrativa = instrucciones
 
-            riesgo_detectado = evaluar_nivel_riesgo_automatico(instrucciones)
-            st.session_state.paciente_riesgo = riesgo_detectado
-
-            if riesgo_detectado == "Alto":
-                st.error("🚨 **Nivel de Riesgo Detectado AUTOMÁTICAMENTE: ALTO** — Se identificaron indicadores de alarma (ideación suicida, violencia o autolesiones).")
-                if st.button("📄 Generar Contrato de Compromiso con la Vida (.docx)", key="btn_compromiso"):
-                    res_comp = generar_compromiso_vida(nombre_input, api_key_env)
-                    st.session_state.res_compromiso_vida = res_comp
-                    st.session_state.doc_compromiso_descargable = crear_documento_word(f"Compromiso de Vida - {nombre_input}", res_comp)
-                    st.rerun()
-
-                if st.session_state.res_compromiso_vida:
-                    st.download_button("📥 Descargar Compromiso con la Vida", data=st.session_state.doc_compromiso_descargable, file_name=f"Compromiso_Vida_{nombre_input}.docx", key="dl_comp")
-                    st.markdown(st.session_state.res_compromiso_vida)
-
-            elif riesgo_detectado == "Medio":
-                st.warning("⚠️ **Nivel de Riesgo Detectado AUTOMÁTICAMENTE: MEDIO** — Sintomatología moderada.")
-            else:
-                st.info("🟢 **Nivel de Riesgo Detectado AUTOMÁTICAMENTE: BAJO** — Sin indicadores de emergencia.")
-
             if st.button("🚀 Procesar Análisis Clínico Completo", key="btn_ac"):
-                if not puede_consultar:
-                    st.error("❌ Créditos agotados.")
-                else:
-                    texto_a_procesar = instrucciones.strip()
-                    if archivo or texto_a_procesar:
-                        with st.spinner("Procesando caso clínico..."):
-                            narrativa_final = f"Paciente: {nombre_input}, {edad} años ({etapa}). Riesgo: {riesgo_detectado}. Motivo: {texto_a_procesar}"
-                            res = procesar_analisis(archivo, f"Paciente: {nombre_input}, {edad} años ({etapa}). Motivo: {texto_a_procesar}") if archivo else analizar_caso_inicial(narrativa_final, api_key_env)
-                            
-                            if res and not res.startswith("❌"):
-                                st.session_state.res_analizador_clinico = res
-                                st.session_state.paciente_nombre = nombre_input
-                                st.session_state.paciente_edad = edad
-                                st.session_state.paciente_etapa = etapa
-                                st.session_state.paciente_riesgo = riesgo_detectado
-                                guardar_en_historial("Analizador Clínico", narrativa_final, res)
-                                
-                                if not st.session_state.caso_activo:
-                                    st.session_state.caso_activo = True
-                                    if not es_premium:
-                                        nuevas = incrementar_consultas(user["id"])
-                                        if nuevas is not None:
-                                            st.session_state.user["consultas_usadas"] = nuevas
-                                st.rerun()
+                if instrucciones.strip():
+                    with st.spinner("Procesando caso clínico..."):
+                        narrativa_final = f"Paciente: {nombre_input}, {edad} años ({etapa}). Motivo: {instrucciones}"
+                        res = analizar_caso_inicial(narrativa_final, api_key_env)
+                        st.session_state.res_analizador_clinico = res
+                        st.session_state.paciente_nombre = nombre_input
+                        st.session_state.paciente_edad = edad
+                        st.session_state.paciente_etapa = etapa
+                        st.session_state.caso_activo = True
+                        guardar_en_historial("Analizador Clínico", narrativa_final, res)
+                        st.rerun()
 
             if st.session_state.res_analizador_clinico:
                 st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
@@ -627,15 +515,13 @@ else:
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state.sub_f1_active == "genograma":
-            st.markdown("#### 🌳 Generador de Genograma y Dinámica Familiar")
-            texto_familia = st.text_area("Describe la estructura y antecedentes familiares del paciente:", placeholder="Ej: Padre alcohólico (relación conflictiva), madre con depresión, 2 hermanos mayores...", key="gf_texto")
+            texto_familia = st.text_area("Describe la estructura y antecedentes familiares del paciente:", key="gf_texto")
             if st.button("🌳 Estructurar Genograma Familiar", key="btn_genograma"):
                 if texto_familia.strip():
-                    with st.spinner("Generando representación sistémica..."):
-                        res_geno = generar_genograma_familiar(texto_familia, api_key_env)
-                        st.session_state.res_genograma = res_geno
-                        guardar_en_historial("Genograma Familiar", texto_familia, res_geno)
-                        st.rerun()
+                    res_geno = generar_genograma_familiar(texto_familia, api_key_env)
+                    st.session_state.res_genograma = res_geno
+                    guardar_en_historial("Genograma Familiar", texto_familia, res_geno)
+                    st.rerun()
 
             if st.session_state.res_genograma:
                 st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
@@ -643,77 +529,43 @@ else:
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state.sub_f1_active == "pruebas":
-            st.markdown("#### 🧪 Buscador y Corrector de Pruebas Psicométricas")
-            tab_bp1, tab_bp2 = st.tabs(["🔎 Recomendar Pruebas", "📝 Corrector de Baremos"])
-            
-            with tab_bp1:
-                caso_bp = st.text_area("Sintomatología o variables a evaluar:", placeholder="Ej: Ansiedad social, inatención...", key="bp_caso")
-                if st.button("🔎 Filtrar Pruebas Normadas", key="btn_bp"):
-                    if caso_bp.strip():
-                        res = obtener_pruebas_psicometricas(caso_bp, st.session_state.paciente_edad if st.session_state.paciente_edad != "--" else 25, st.session_state.paciente_etapa if st.session_state.paciente_etapa != "--" else "Adulto", api_key_env)
-                        st.session_state.res_buscador_pruebas = res
-                        st.rerun()
+            caso_bp = st.text_area("Sintomatología o variables a evaluar:", key="bp_caso")
+            if st.button("🔎 Filtrar Pruebas Normadas", key="btn_bp"):
+                if caso_bp.strip():
+                    res = obtener_pruebas_psicometricas(caso_bp, st.session_state.paciente_edad if st.session_state.paciente_edad != "--" else 25, st.session_state.paciente_etapa if st.session_state.paciente_etapa != "--" else "Adulto", api_key_env)
+                    st.session_state.res_buscador_pruebas = res
+                    st.rerun()
 
-                if st.session_state.res_buscador_pruebas:
-                    st.markdown(st.session_state.res_buscador_pruebas)
-
-            with tab_bp2:
-                nombre_prueba = st.text_input("Prueba aplicada:", placeholder="Ej: WAIS-IV, BDI-II...", key="cp_nombre")
-                puntajes_texto = st.text_area("Puntuaciones y Percentiles directos:", key="cp_puntajes")
-                if st.button("📊 Interpretar Baremos", key="btn_cp"):
-                    if nombre_prueba.strip() and puntajes_texto.strip():
-                        res = interpretar_puntajes_psicometricos(nombre_prueba, puntajes_texto, st.session_state.paciente_edad if st.session_state.paciente_edad != "--" else 25, api_key_env)
-                        st.session_state.res_corrector_psicometrico = res
-                        st.rerun()
-
-                if st.session_state.res_corrector_psicometrico:
-                    st.markdown(st.session_state.res_corrector_psicometrico)
+            if st.session_state.res_buscador_pruebas:
+                st.markdown(st.session_state.res_buscador_pruebas)
 
     # ==========================================
     # FASE 2: INTERVENCIÓN Y HOJAS DE TRABAJO
     # ==========================================
     elif "FASE 2" in fase_seleccionada:
         st.subheader("🎯 Fase 2: Plan Terapéutico, Hojas de Trabajo y Co-Terapia")
-        
-        col_f2_1, col_f2_2, col_f2_3, col_f2_4 = st.columns(4)
-        with col_f2_1:
-            btn_f2_mod1 = st.button("🎯 Plan de Tratamiento", use_container_width=True)
-        with col_f2_2:
-            btn_f2_mod2 = st.button("📝 Hojas de Trabajo", use_container_width=True)
-        with col_f2_3:
-            btn_f2_mod3 = st.button("🎙️ Analizador de Sesiones", use_container_width=True)
-        with col_f2_4:
-            btn_f2_mod4 = st.button("💬 Co-Terapeuta IA", use_container_width=True)
+        col_f2_1, col_f2_2, col_f2_3 = st.columns(3)
+        with col_f2_1: btn_f2_mod1 = st.button("🎯 Plan de Tratamiento", use_container_width=True)
+        with col_f2_2: btn_f2_mod2 = st.button("📝 Hojas de Trabajo", use_container_width=True)
+        with col_f2_3: btn_f2_mod3 = st.button("💬 Co-Terapeuta IA", use_container_width=True)
 
         if "sub_f2_active" not in st.session_state:
             st.session_state.sub_f2_active = "plan"
 
-        if btn_f2_mod1:
-            st.session_state.sub_f2_active = "plan"
-        elif btn_f2_mod2:
-            st.session_state.sub_f2_active = "hojas"
-        elif btn_f2_mod3:
-            st.session_state.sub_f2_active = "sesion"
-        elif btn_f2_mod4:
-            st.session_state.sub_f2_active = "coterapeuta"
+        if btn_f2_mod1: st.session_state.sub_f2_active = "plan"
+        elif btn_f2_mod2: st.session_state.sub_f2_active = "hojas"
+        elif btn_f2_mod3: st.session_state.sub_f2_active = "coterapeuta"
 
         if st.session_state.sub_f2_active == "plan":
-            col_t1, col_t2 = st.columns(2)
-            with col_t1:
-                enfoque_terapia = st.selectbox("Modelo Terapéutico:", ["Cognitivo-Conductual (TCC)", "Sistémico-Familiar", "Terapia de Aceptación y Compromiso (ACT)", "Humanista-Existencial"], key="pt_enfoque")
-            with col_t2:
-                num_sesiones = st.slider("Sesiones estimadas:", 4, 24, 12, key="pt_sesiones")
-
             diag_plan = st.text_input("Diagnóstico / Problema Blanco:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "", key="pt_diag")
             sintomas_plan = st.text_area("Síntomas y metas clínicas:", key="pt_sintomas")
 
             if st.button("🚀 Crear Plan de Tratamiento", key="btn_plan"):
                 if diag_plan.strip() or sintomas_plan.strip():
-                    prompt_plan = f"Crea un plan de tratamiento psicológico de {num_sesiones} sesiones bajo el enfoque {enfoque_terapia} para: {diag_plan}. Síntomas: {sintomas_plan}."
-                    res_plan = analizar_caso_inicial(prompt_plan, api_key_env)
+                    res_plan = generar_plan_tratamiento_psicologico(diag_plan, "Cognitivo-Conductual", 12, api_key_env)
                     st.session_state.res_plan_tratamiento = res_plan
                     st.session_state.doc_plan_descargable = crear_documento_word(f"Plan de Tratamiento - {st.session_state.paciente_nombre}", res_plan)
-                    guardar_en_historial("Plan de Tratamiento", f"Enfoque: {enfoque_terapia}", res_plan)
+                    guardar_en_historial("Plan de Tratamiento", diag_plan, res_plan)
                     st.rerun()
 
             if st.session_state.res_plan_tratamiento:
@@ -723,64 +575,31 @@ else:
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state.sub_f2_active == "hojas":
-            st.markdown("#### 📝 Generador de Hojas de Trabajo y Autorregistros para el Paciente")
-            col_h1, col_h2 = st.columns(2)
-            with col_h1:
-                tipo_hoja = st.selectbox("Selecciona el tipo de Autorregistro:", [
-                    "Registro TCC de Pensamientos Automáticos (S-P-E-C)",
-                    "Diario Terapéutico de Estado de Ánimo y Ansiedad",
-                    "Registro Conductual de Activación y Hábitos",
-                    "Hoja de Solución de Problemas y Toma de Decisiones",
-                    "Escala de Exposición Gradual a Miedos (Jerarquía)"
-                ], key="ht_tipo")
-            with col_h2:
-                meta_hoja = st.text_input("Diagnóstico o Meta del Paciente:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "", key="ht_meta")
+            tipo_hoja = st.selectbox("Selecciona el tipo de Autorregistro:", ["Registro TCC de Pensamientos Automáticos", "Diario Terapéutico de Ansiedad"], key="ht_tipo")
+            meta_hoja = st.text_input("Diagnóstico o Meta del Paciente:", key="ht_meta")
 
-            if st.button("📝 Generar Hoja de Trabajo Imprimible", key="btn_hoja"):
+            if st.button("📝 Generar Hoja de Trabajo", key="btn_hoja"):
                 if meta_hoja.strip():
-                    with st.spinner("Diseñando registro práctico..."):
-                        res_hoja = generar_hoja_trabajo_paciente(tipo_hoja, meta_hoja, api_key_env)
-                        st.session_state.res_hoja_trabajo = res_hoja
-                        st.session_state.doc_hoja_descargable = crear_documento_word(f"Hoja de Trabajo - {tipo_hoja}", res_hoja)
-                        guardar_en_historial("Hoja de Trabajo", f"{tipo_hoja} - {meta_hoja}", res_hoja)
-                        st.rerun()
+                    res_hoja = generar_hoja_trabajo_paciente(tipo_hoja, meta_hoja, api_key_env)
+                    st.session_state.res_hoja_trabajo = res_hoja
+                    st.session_state.doc_hoja_descargable = crear_documento_word(f"Hoja - {tipo_hoja}", res_hoja)
+                    guardar_en_historial("Hoja de Trabajo", meta_hoja, res_hoja)
+                    st.rerun()
 
             if st.session_state.res_hoja_trabajo:
-                st.download_button("📥 Descargar Hoja para el Paciente (.docx)", data=st.session_state.doc_hoja_descargable, file_name=f"Registro_Paciente_{st.session_state.paciente_nombre}.docx", key="dl_hoja")
+                st.download_button("📥 Descargar Hoja (.docx)", data=st.session_state.doc_hoja_descargable, file_name=f"Hoja_{st.session_state.paciente_nombre}.docx", key="dl_hoja")
                 st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
                 st.markdown(st.session_state.res_hoja_trabajo)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        elif st.session_state.sub_f2_active == "sesion":
-            archivo_sesion = st.file_uploader("Audio de la sesión (Máx 25 MB):", type=["mp3", "wav", "m4a"], key="uploader_sesion")
-            texto_sesion = st.text_area("O pega la transcripción escrita de la sesión:", key="txt_sesion")
-
-            if st.button("🔍 Analizar Dinámica de la Sesión", key="btn_sesion"):
-                transcripcion_final = texto_sesion.strip()
-                if archivo_sesion and not transcripcion_final:
-                    transcripcion_final = transcribir_audio_groq(archivo_sesion, api_key_env)
-
-                if transcripcion_final and not str(transcripcion_final).startswith("Error"):
-                    res = analizar_transcripcion_sesion(transcripcion_final, api_key_env)
-                    st.session_state.res_analizador_sesiones = res
-                    guardar_en_historial("Analizador de Sesiones", "Análisis de Sesión", res)
-                    st.rerun()
-
-            if st.session_state.res_analizador_sesiones:
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_analizador_sesiones)
-                st.markdown('</div>', unsafe_allow_html=True)
-
         elif st.session_state.sub_f2_active == "coterapeuta":
-            st.markdown("#### 💬 Co-Terapeuta y Supervisión de Estrategias")
-            consulta_supervisor = st.text_area("Escribe tu duda técnica sobre el manejo del paciente activo:", placeholder="Ej: Mi paciente se resiste a los registros TCC...", key="txt_sup")
-            if st.button("💬 Consultar con Co-Terapeuta IA", key="btn_coterapeuta"):
-                if consulta_supervisor.strip():
-                    with st.spinner("Consultando supervisor clínico..."):
-                        res_sup = generar_supervision_coterapeuta(st.session_state.paciente_nombre, consulta_supervisor, api_key_env)
-                        st.session_state.res_coterapeuta = res_sup
-                        guardar_en_historial("Co-Terapeuta", consulta_supervisor, res_sup)
-                        st.rerun()
+            consulta_sup = st.text_area("Escribe tu duda técnica sobre el caso:", key="txt_sup")
+            if st.button("💬 Consultar Co-Terapeuta", key="btn_coterapeuta"):
+                if consulta_sup.strip():
+                    res_sup = generar_supervision_coterapeuta(st.session_state.paciente_nombre, consulta_sup, api_key_env)
+                    st.session_state.res_coterapeuta = res_sup
+                    guardar_en_historial("Co-Terapeuta", consulta_sup, res_sup)
+                    st.rerun()
 
             if st.session_state.res_coterapeuta:
                 st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
@@ -792,75 +611,23 @@ else:
     # ==========================================
     elif "FASE 3" in fase_seleccionada:
         st.subheader("📄 Fase 3: Redactor de Informes Oficiales y Psicoeducación")
-        col_f3_1, col_f3_2 = st.columns(2)
-        with col_f3_1:
-            btn_f3_mod1 = st.button("📄 Redactor de Informes", use_container_width=True)
-        with col_f3_2:
-            btn_f3_mod2 = st.button("📚 Guías Psicoeducativas", use_container_width=True)
+        nombre_p = st.text_input("Paciente / Iniciales:", value=st.session_state.paciente_nombre, key="inf_nom")
+        motivo_p = st.text_area("Motivo de Consulta:", key="inf_motivo")
 
-        if "sub_f3_active" not in st.session_state:
-            st.session_state.sub_f3_active = "informe"
+        if st.button("📄 Generar Informe Oficial", key="btn_inf"):
+            if motivo_p.strip():
+                datos_dict = {"nombre": nombre_p, "motivo": motivo_p}
+                res_inf = generar_informe_premium(datos_dict, "Clínico", "", api_key_env)
+                st.session_state.res_generador_informes = res_inf
+                st.session_state.doc_informe_descargable = crear_documento_word(f"Informe - {nombre_p}", res_inf)
+                guardar_en_historial("Informe Clínico", nombre_p, res_inf)
+                st.rerun()
 
-        if btn_f3_mod1:
-            st.session_state.sub_f3_active = "informe"
-        elif btn_f3_mod2:
-            st.session_state.sub_f3_active = "psico"
-
-        if st.session_state.sub_f3_active == "informe":
-            col_inf1, col_inf2 = st.columns(2)
-            with col_inf1:
-                nombre_p = st.text_input("Paciente / Iniciales:", value=st.session_state.paciente_nombre, key="inf_nom")
-                edad_p = st.text_input("Edad:", value=str(st.session_state.paciente_edad), key="inf_edad")
-                genero_p = st.text_input("Género:", value="Femenino", key="inf_gen")
-                ocupacion_p = st.text_input("Ocupación:", value="Estudiante", key="inf_ocup")
-            with col_inf2:
-                enfoque_p = st.selectbox("Enfoque del Informe:", ["Clínico", "Educativo", "Neuropsicológico"], key="inf_enf")
-                plantilla_docx = st.file_uploader("Sube tu plantilla (.docx) [Opcional]:", type=["docx"], key="inf_plantilla")
-
-            motivo_p = st.text_area("Motivo de Consulta:", key="inf_motivo")
-            problema_p = st.text_area("Problema Actual:", key="inf_prob")
-            pruebas_p = st.text_area("Pruebas Aplicadas:", key="inf_pruebas")
-            obs_p = st.text_area("Observaciones Conductuales:", key="inf_obs")
-            diag_p = st.text_area("Diagnóstico / Conclusiones:", key="inf_diag")
-
-            if st.button("📄 Generar Informe Oficial", key="btn_inf"):
-                if motivo_p.strip() or problema_p.strip():
-                    plantilla_texto = extraer_texto_docx(plantilla_docx) if plantilla_docx else ""
-                    datos_dict = {
-                        "nombre": nombre_p, "edad": edad_p, "genero": genero_p, "ocupacion": ocupacion_p,
-                        "motivo": motivo_p, "problema_actual": problema_p, "pruebas_aplicadas": pruebas_p,
-                        "observaciones": obs_p, "diagnostico": diag_p
-                    }
-
-                    res_informe = generar_informe_premium(datos_dict, enfoque_p, plantilla_texto, api_key_env)
-                    st.session_state.res_generador_informes = res_informe
-                    st.session_state.doc_informe_descargable = crear_documento_word(f"Informe Psicológico - {nombre_p}", res_informe)
-                    guardar_en_historial("Generador de Informes", f"Paciente: {nombre_p}", res_informe)
-                    st.rerun()
-
-            if st.session_state.res_generador_informes:
-                st.download_button("📥 Descargar Informe en Word (.docx)", data=st.session_state.doc_informe_descargable, file_name=f"Informe_{st.session_state.inf_nom}.docx", key="dl_inf")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_generador_informes)
-                st.markdown('</div>', unsafe_allow_html=True)
-
-        elif st.session_state.sub_f3_active == "psico":
-            diag_base = st.text_input("Diagnóstico o Condición:", placeholder="Ej: TDAH, Ansiedad Generalizada...", key="psico_diag")
-            destinatario = st.selectbox("Destinatario del Material:", ["Paciente", "Familiares / Cuidadores", "Docentes / Colegio"], key="psico_dest")
-
-            if st.button("📚 Generar Folleto Psicoeducativo", key="btn_psico"):
-                if diag_base.strip():
-                    res = generar_plantilla_psicoeducacion(diag_base, destinatario, api_key_env)
-                    st.session_state.res_psicoeducacion = res
-                    st.session_state.doc_psico_descargable = crear_documento_word(f"Guía Psicoeducativa - {diag_base}", res)
-                    guardar_en_historial("Psicoeducación", f"{diag_base} -> {destinatario}", res)
-                    st.rerun()
-
-            if st.session_state.res_psicoeducacion:
-                st.download_button("📥 Descargar Guía en Word (.docx)", data=st.session_state.doc_psico_descargable, file_name=f"Psicoeducacion_{st.session_state.psico_diag}.docx", key="dl_psico")
-                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
-                st.markdown(st.session_state.res_psicoeducacion)
-                st.markdown('</div>', unsafe_allow_html=True)
+        if st.session_state.res_generador_informes:
+            st.download_button("📥 Descargar Informe (.docx)", data=st.session_state.doc_informe_descargable, file_name=f"Informe_{nombre_p}.docx", key="dl_inf")
+            st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+            st.markdown(st.session_state.res_generador_informes)
+            st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
     # MI HISTORIAL EN NUBE
@@ -870,27 +637,7 @@ else:
         historial_bd = obtener_historial_usuario(user["id"], limite=100)
 
         if historial_bd:
-            col_h1, col_h2 = st.columns([3, 1])
-            with col_h1:
-                st.caption(f"Mostrando {len(historial_bd)} registros guardados en la nube.")
-            with col_h2:
-                if st.button("🗑️ Borrar Historial", key="btn_borrar_historial"):
-                    st.session_state["confirmar_borrado"] = True
-
-            if st.session_state.get("confirmar_borrado"):
-                st.warning("¿Seguro que deseas eliminar tu historial completo?")
-                c_conf1, c_conf2 = st.columns(2)
-                with c_conf1:
-                    if st.button("✅ Confirmar", key="btn_confirmar_borrado"):
-                        borrar_historial_usuario(user["id"])
-                        st.session_state.historial_consultas = []
-                        st.session_state["confirmar_borrado"] = False
-                        st.rerun()
-                with c_conf2:
-                    if st.button("❌ Cancelar", key="btn_cancelar_borrado"):
-                        st.session_state["confirmar_borrado"] = False
-                        st.rerun()
-
+            st.caption(f"Mostrando {len(historial_bd)} registros guardados en la nube.")
             for item in historial_bd:
                 fecha = item.get("creado_en", "")
                 with st.expander(f"📌 [{item['modulo']}] - {fecha[:16].replace('T', ' ')}"):
