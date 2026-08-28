@@ -115,7 +115,6 @@ st.markdown("""
         box-shadow: 0px 6px 20px rgba(108, 60, 181, 0.1) !important; 
     }
 
-    /* TARJETA HOLOGRÁFICA Y AVATAR EN CSS PURO (SIN BLOQUES ESTORBOSOS) */
     .patu-holograma-box {
         background: linear-gradient(145deg, #FFFFFF 0%, #F3ECFA 100%) !important;
         border: 3px solid #7C42D1 !important;
@@ -205,6 +204,10 @@ if "historial_consultas" not in st.session_state:
     st.session_state.historial_consultas = []
 if "caso_activo" not in st.session_state:
     st.session_state.caso_activo = False
+
+# CONTROL DE INTERACCIÓN DE VOZ CONTINUA
+if "primera_interaccion_patu" not in st.session_state:
+    st.session_state.primera_interaccion_patu = True
 
 if "paciente_nombre" not in st.session_state:
     st.session_state.paciente_nombre = "Paciente Anónimo"
@@ -416,17 +419,16 @@ else:
     st.write("---")
 
     # ==========================================
-    # MODO AGENTE DE VOZ AUTÓNOMO CON PATU AI LIMPIO
+    # MODO AGENTE DE VOZ AUTÓNOMO
     # ==========================================
     if "PATU LIVE" in fase_seleccionada:
         st.subheader("🐾 Habla en Vivo con PATU (Agente de Voz Autónomo)")
-        st.caption("Háblale a PATU por micrófono, salúdalo, pídele ejecutar tareas clínicas o dile: 'Muestra tu poder'.")
+        st.caption("Interacción de voz en tiempo real. Presiona el micrófono y habla naturalmente.")
 
         col_avatar, col_interaccion = st.columns([1, 2])
 
         with col_avatar:
             st.markdown('<div class="patu-holograma-box">', unsafe_allow_html=True)
-            # Avatar Ilustrado de Gatito Blanco en CSS
             st.markdown("""
                 <div class="cat-avatar-container">
                     <div class="cat-head">
@@ -443,6 +445,11 @@ else:
 
         with col_interaccion:
             st.markdown("### 🎙️ Micrófono de Control Autónomo")
+            
+            # Botón para detener la voz del navegador inmediatamente si deseas interrumpir
+            if st.button("🛑 Interrumpir Voz", key="btn_stop_speech"):
+                st.components.v1.html("<script>window.speechSynthesis.cancel();</script>", height=0)
+
             audio_comando = st.audio_input("Presiona el micrófono y háblale a PATU:", key="mic_agente_patu")
 
             if audio_comando is not None:
@@ -454,7 +461,15 @@ else:
                         if comando_texto and not str(comando_texto).startswith("Error"):
                             st.session_state["last_agent_audio"] = audio_bytes_cmd
                             contexto_paciente = f"Paciente: {st.session_state.paciente_nombre}, Edad: {st.session_state.paciente_edad}, Riesgo: {st.session_state.paciente_riesgo}"
-                            respuesta_patu = procesar_comando_agente_patu(str(comando_texto), contexto_paciente, api_key_env)
+                            
+                            respuesta_patu = procesar_comando_agente_patu(
+                                str(comando_texto), 
+                                contexto_paciente, 
+                                primera_interaccion=st.session_state.primera_interaccion_patu,
+                                api_key=api_key_env
+                            )
+                            
+                            st.session_state.primera_interaccion_patu = False
                             
                             st.session_state.res_patu_live = {
                                 "pregunta": str(comando_texto),
@@ -463,7 +478,7 @@ else:
                             guardar_en_historial("PATU Agente Voz", str(comando_texto), respuesta_patu)
                             st.rerun()
 
-        # RESPUESTA Y VOZ SINTETIZADA FLUIDA (SIN BLOQUEOS)
+        # RESPUESTA Y VOZ SINTETIZADA HUMANA CON SELECCIÓN DE VOZ MEJORADA Y CONTROL DE INTERRUPCIÓN
         if st.session_state.res_patu_live:
             st.markdown("---")
             st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
@@ -471,19 +486,36 @@ else:
             st.markdown(f"🐾 **PATU AI responde:**")
             st.markdown(st.session_state.res_patu_live['respuesta'])
             
-            # Síntesis hablada optimizada (Máximo 2 oraciones para evitar trabas del navegador)
             texto_voz_limpio = st.session_state.res_patu_live['respuesta'].replace('"', "'").replace('\n', ' ').replace('#', '').replace('*', '')
             oraciones = [s.strip() for s in texto_voz_limpio.split('.') if len(s.strip()) > 5]
             resumen_voz = ". ".join(oraciones[:2]) if len(oraciones) >= 2 else (oraciones[0] if len(oraciones) == 1 else "Proceso completado.")
             
+            # SCRIPT MEJORADO: Cancela voces previas e intenta seleccionar la voz femenina en español más natural disponible
             js_code = f"""
                 <script>
+                window.speechSynthesis.cancel();
                 var msg = new SpeechSynthesisUtterance("{resumen_voz}");
                 msg.lang = 'es-ES';
-                msg.rate = 1.0;
-                msg.pitch = 1.1;
-                window.speechSynthesis.cancel();
-                window.speechSynthesis.speak(msg);
+                msg.rate = 1.02;
+                msg.pitch = 1.15;
+
+                function cargarVozHumana() {{
+                    var voices = window.speechSynthesis.getVoices();
+                    var vozEspanol = voices.find(v => v.lang.includes('es') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Sabina') || v.name.includes('Helena') || v.name.includes('Monica')));
+                    if (!vozEspanol) {{
+                        vozEspanol = voices.find(v => v.lang.includes('es'));
+                    }}
+                    if (vozEspanol) {{
+                        msg.voice = vozEspanol;
+                    }}
+                    window.speechSynthesis.speak(msg);
+                }}
+
+                if (window.speechSynthesis.getVoices().length !== 0) {{
+                    cargarVozHumana();
+                }} else {{
+                    window.speechSynthesis.onvoiceschanged = cargarVozHumana;
+                }}
                 </script>
             """
             st.components.v1.html(js_code, height=0)
