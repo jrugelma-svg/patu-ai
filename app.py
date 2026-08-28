@@ -23,7 +23,8 @@ from engine import (
     transcribir_audio_groq,
     crear_documento_word,
     extraer_texto_docx,
-    procesar_analisis
+    procesar_analisis,
+    evaluar_nivel_riesgo_automatico
 )
 
 # ==========================================
@@ -48,7 +49,7 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
     
-    /* 2. Barra lateral estilo Glassmorphism con pulso suave */
+    /* 2. Barra lateral estilo Glassmorphism */
     section[data-testid="stSidebar"] { 
         background: rgba(240, 235, 252, 0.8) !important; 
         backdrop-filter: blur(14px) !important;
@@ -383,7 +384,7 @@ else:
                     <div>{st.session_state.paciente_edad} años ({st.session_state.paciente_etapa})</div>
                 </div>
                 <div class="ficha-item">
-                    <small>Riesgo Estimado</small>
+                    <small>Riesgo Detectado</small>
                     <div style="color: {color_riesgo};">{st.session_state.paciente_riesgo}</div>
                 </div>
             </div>
@@ -418,7 +419,7 @@ else:
         if link_pago:
             st.link_button("🚀 Recargar +10 Créditos por S/. 2.00", link_pago)
 
-    # PESTAÑAS MEJORADAS
+    # PESTAÑAS
     tabs = st.tabs([
         "📋 Analizador Clínico", 
         "🧪 Buscador de Pruebas", 
@@ -443,8 +444,6 @@ else:
             edad = st.number_input("🎂 Edad (años):", min_value=1, max_value=120, value=25, key="ac_edad")
         with c_p3:
             etapa = st.selectbox("👶 / 🧑 Etapa:", ["Infantil", "Adolescente", "Adulto", "Adulto Mayor"], key="ac_etapa")
-
-        nivel_riesgo = st.select_slider("⚠️ Nivel de Riesgo Inicial Detectado:", options=["Bajo", "Medio", "Alto"], key="ac_riesgo")
 
         st.write("---")
         col_f1, col_f2 = st.columns(2)
@@ -473,6 +472,17 @@ else:
         )
         st.session_state.texto_narrativa = instrucciones
 
+        # EVALUACIÓN AUTOMÁTICA EN TIEMPO REAL
+        riesgo_detectado = evaluar_nivel_riesgo_automatico(instrucciones)
+        st.session_state.paciente_riesgo = riesgo_detectado
+
+        if riesgo_detectado == "Alto":
+            st.error("🚨 **Nivel de Riesgo Inicial Detectado AUTOMÁTICAMENTE: ALTO** — Se identificaron indicadores críticos de urgencia (ideación/intento suicida, violencia o autolesiones).")
+        elif riesgo_detectado == "Medio":
+            st.warning("⚠️ **Nivel de Riesgo Inicial Detectado AUTOMÁTICAMENTE: MEDIO** — Se identificó sintomatología moderada a severa (ansiedad, crisis de pánico o consumo).")
+        else:
+            st.info("🟢 **Nivel de Riesgo Inicial Detectado AUTOMÁTICAMENTE: BAJO** — Sin indicadores de emergencia en la narrativa.")
+
         if st.button("Procesar Análisis Clínico Completo", key="btn_ac"):
             if not puede_consultar:
                 st.error("❌ Créditos agotados. Por favor realiza una recarga.")
@@ -485,7 +495,7 @@ else:
 
                 if archivo or texto_a_procesar:
                     with st.spinner("Procesando caso clínico..."):
-                        narrativa_final = f"Paciente: {nombre_input}, {edad} años ({etapa}). Riesgo: {nivel_riesgo}. Motivo: {texto_a_procesar}"
+                        narrativa_final = f"Paciente: {nombre_input}, {edad} años ({etapa}). Riesgo Detectado: {riesgo_detectado}. Motivo: {texto_a_procesar}"
                         
                         if archivo:
                             res = procesar_analisis(archivo, f"Paciente: {nombre_input}, {edad} años ({etapa}). Motivo: {texto_a_procesar}")
@@ -497,7 +507,7 @@ else:
                             st.session_state.paciente_nombre = nombre_input
                             st.session_state.paciente_edad = edad
                             st.session_state.paciente_etapa = etapa
-                            st.session_state.paciente_riesgo = nivel_riesgo
+                            st.session_state.paciente_riesgo = riesgo_detectado
                             guardar_en_historial("Analizador Clínico", narrativa_final, res)
                             
                             if not st.session_state.caso_activo:
@@ -551,7 +561,7 @@ else:
             st.markdown('</div>', unsafe_allow_html=True)
 
     # ==========================================
-    # 3. PLAN DE TRATAMIENTO (NUEVO MÓDULO INTUITIVO)
+    # 3. PLAN DE TRATAMIENTO
     # ==========================================
     with tabs[2]:
         st.subheader("🎯 Diseñador de Plan de Intervención y Objetivos Terapéuticos")
@@ -569,7 +579,6 @@ else:
                 st.error("❌ Créditos agotados.")
             elif diag_plan.strip() or sintomas_plan.strip():
                 with st.spinner("Estructurando metas, fases y tareas para casa..."):
-                    # Generación usando la lógica central
                     prompt_plan = f"Crea un plan de tratamiento psicológico de {num_sesiones} sesiones bajo el enfoque {enfoque_terapia} para el diagnóstico/caso: {diag_plan}. Síntomas y metas: {sintomas_plan}. Incluye: 1. Objetivos a corto, mediano y largo plazo. 2. Estructura por fases de intervención. 3. Técnicas recomendadas. 4. Tareas psicoeducativas o para la casa."
                     res_plan = analizar_caso_inicial(prompt_plan, api_key_env)
                     
