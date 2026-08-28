@@ -44,7 +44,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# ESTILOS CSS REVOLUCIONARIOS CON ANIMACIÓN DE LOGO HABLANCE
+# ESTILOS CSS CON TARJETA DE ASISTENTE EN ARMONÍA DE PALETA MALVA/NEÓN
 # ==========================================
 st.markdown("""
     <style>
@@ -115,23 +115,34 @@ st.markdown("""
         box-shadow: 0px 6px 20px rgba(108, 60, 181, 0.1) !important; 
     }
 
-    /* ANIMACIÓN DEL LOGO SALTARÍN HAPLANTE */
-    .patu-avatar-animado {
-        border-radius: 50%;
-        border: 4px solid #8A93FF;
-        box-shadow: 0 0 20px rgba(138, 147, 255, 0.6);
-        animation: bouncePatu 2.2s infinite ease-in-out;
-        transition: transform 0.3s ease;
+    /* TARJETA HOLOGRÁFICA EN NEÓN MALVA/LAVANDA ACORDE A LA PALETA */
+    .patu-holograma-box {
+        background: linear-gradient(145deg, #FFFFFF 0%, #F3ECFA 100%) !important;
+        border: 3px solid #7C42D1 !important;
+        border-radius: 24px !important;
+        padding: 25px !important;
+        text-align: center !important;
+        box-shadow: 0 0 25px rgba(124, 66, 209, 0.3) !important;
+        position: relative;
     }
-    
-    @keyframes bouncePatu {
+
+    .patu-avatar-animado {
+        width: 170px !important;
+        height: 170px !important;
+        border-radius: 50% !important;
+        border: 4px solid #8A93FF !important;
+        object-fit: cover !important;
+        animation: floatPatuNeon 2.5s infinite ease-in-out !important;
+    }
+
+    @keyframes floatPatuNeon {
         0%, 100% {
-            transform: translateY(0) scale(1);
-            box-shadow: 0 0 15px rgba(138, 147, 255, 0.5);
+            transform: translateY(0px) scale(1);
+            box-shadow: 0 0 20px rgba(124, 66, 209, 0.6), 0 0 40px rgba(138, 147, 255, 0.3);
         }
         50% {
-            transform: translateY(-12px) scale(1.04);
-            box-shadow: 0 15px 30px rgba(255, 133, 184, 0.7);
+            transform: translateY(-14px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(255, 133, 184, 0.8), 0 0 50px rgba(124, 66, 209, 0.5);
         }
     }
 
@@ -231,7 +242,7 @@ if not st.session_state.user:
             <div class="header-banner">
                 <div>
                     <h1>PATU AI <span class="badge-pro">v4.0 PRO</span></h1>
-                    <p>Psychologists United Across America — Workstation Clínico Inteligente</p>
+                    <p>Gestión de Proyectos — Grupo 2 (Viernes) | Docente: Richard Edgar González</p>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -291,7 +302,7 @@ else:
             <div class="header-banner">
                 <div>
                     <h1>PATU AI <span class="badge-pro">v4.0 PRO</span></h1>
-                    <p>Bienvenido, <b>{user.get('nombre', 'Doctor(a)')}</b> — Workstation Clínico Intuitivo</p>
+                    <p>Desarrollado por <b>Jordan Rugel Martínez & Grupo 2 (Gestión de Proyectos)</b> | Docente: <b>Richard Edgar González</b></p>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
@@ -372,21 +383,23 @@ else:
     # ==========================================
     if "PATU LIVE" in fase_seleccionada:
         st.subheader("🐾 Habla en Vivo con PATU (Agente de Voz Autónomo)")
-        st.caption("No necesitas tocar botones. Háblale a PATU, salúdalo o pídele directamente que ejecute cualquier tarea clínica.")
+        st.caption("Desarrollado por Jordan Rugel Martínez & Grupo 2 | Curso: Gestión de Proyectos | Docente: Richard Edgar González")
 
         col_avatar, col_interaccion = st.columns([1, 2])
 
         with col_avatar:
-            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
+            st.markdown('<div class="patu-holograma-box">', unsafe_allow_html=True)
             if os.path.exists("logo.jpg"):
-                st.image("logo.jpg", width=200, caption="🐾 PATU AI (Escuchando en vivo)")
+                st.markdown('<img src="logo.jpg" class="patu-avatar-animado">', unsafe_allow_html=True)
             else:
                 st.markdown("""
-                    <div style="background:#EFE6FA; padding:30px; border-radius:50%; display:inline-block; border:4px solid #8A93FF;">
-                        <h1 style="font-size:70px; margin:0;">🐱</h1>
+                    <div style="background:#EFE6FA; padding:20px; border-radius:50%; display:inline-block;">
+                        <h1 style="font-size:80px; margin:0;">🐱</h1>
                     </div>
                 """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<h3 style='margin-top:15px; color:#7C42D1;'><b>PATU AI</b></h3>", unsafe_allow_html=True)
+            st.markdown("<small style='color:#6C3CB5;'><b>Creadores:</b> Jordan Rugel M. & Grupo 2<br><b>Docente:</b> Richard Edgar González</small>", unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
 
         with col_interaccion:
             st.markdown("### 🎙️ Micrófono de Control Autónomo")
