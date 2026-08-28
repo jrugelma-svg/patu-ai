@@ -79,7 +79,44 @@ def obtener_pruebas_psicometricas(caso_o_sintomas, edad, etapa, api_key=None):
         return f"❌ Error al buscar pruebas: {str(e)}"
 
 # ==========================================
-# 3. GENERADOR DE INFORMES PREMIUM
+# 3. DISEÑADOR DE PLANES DE TRATAMIENTO (NUEVO)
+# ==========================================
+def generar_plan_tratamiento_psicologico(diagnostico_o_caso, enfoque, num_sesiones=12, api_key=None):
+    if not api_key:
+        api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return "❌ Error: No se encontró GROQ_API_KEY."
+
+    prompt = f"""
+    Eres un psicólogo clínico especialista en diseño de intervenciones terapéuticas basadas en evidencia.
+    Diseña un plan de tratamiento psicológico formal e integral.
+
+    Detalles de la Intervención:
+    - Caso / Diagnóstico Blanco: {diagnostico_o_caso}
+    - Enfoque / Modelo Terapéutico: {enfoque}
+    - Duración Estimada: {num_sesiones} sesiones.
+
+    Por favor proporciona una propuesta estructurada con:
+    ### 1. Objetivos Terapéuticos (Corto, Mediano y Largo Plazo)
+    ### 2. Estructura por Fases de Intervención (Fase Inicial, Núcleo e Intervención, Cierre y Prevención de Recaídas)
+    ### 3. Técnicas y Herramientas Clínicas Específicas
+    ### 4. Tareas Psicoeducativas o Registros para Casa (Entre sesiones)
+    ### 5. Criterios de Alta y Muestras de Progreso
+    """
+
+    try:
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model=MODELO_ACTIVO,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error al generar el plan de tratamiento: {str(e)}"
+
+# ==========================================
+# 4. GENERADOR DE INFORMES PREMIUM
 # ==========================================
 def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=None):
     if not api_key:
@@ -120,7 +157,7 @@ def generar_informe_premium(datos_dict, enfoque, plantilla_texto="", api_key=Non
         return f"❌ Error al generar informe: {str(e)}"
 
 # ==========================================
-# 4. ANALIZADOR DE SESIONES
+# 5. ANALIZADOR DE SESIONES
 # ==========================================
 def analizar_transcripcion_sesion(transcripcion, api_key=None):
     if not api_key:
@@ -154,7 +191,7 @@ def analizar_transcripcion_sesion(transcripcion, api_key=None):
         return f"❌ Error en análisis de sesión: {str(e)}"
 
 # ==========================================
-# 5. PSICOEDUCACIÓN
+# 6. PSICOEDUCACIÓN
 # ==========================================
 def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
     if not api_key:
@@ -188,7 +225,7 @@ def generar_plantilla_psicoeducacion(diagnostico, destinatario, api_key=None):
         return f"❌ Error al generar psicoeducación: {str(e)}"
 
 # ==========================================
-# 6. CORRECTOR PSICOMÉTRICO
+# 7. CORRECTOR PSICOMÉTRICO
 # ==========================================
 def interpretar_puntajes_psicometricos(nombre_prueba, puntajes, edad, api_key=None):
     if not api_key:
@@ -231,6 +268,11 @@ def transcribir_audio_groq(archivo_audio, api_key=None):
 
     try:
         client = Groq(api_key=api_key)
+        
+        # Reset de puntero para evitar enviar 0 bytes a Whisper
+        if hasattr(archivo_audio, 'seek'):
+            archivo_audio.seek(0)
+            
         audio_bytes = archivo_audio.read()
         nombre_archivo = getattr(archivo_audio, 'name', 'audio.mp3')
         
@@ -264,7 +306,6 @@ def crear_documento_word(titulo, contenido):
         elif linea.startswith('# '):
             doc.add_heading(texto_limpio.replace('# ', ''), level=1)
         elif linea.startswith('- ') or linea.startswith('* '):
-            # Agregar como viñeta oficial de Word
             doc.add_paragraph(texto_limpio[2:], style='List Bullet')
         else:
             doc.add_paragraph(texto_limpio)
