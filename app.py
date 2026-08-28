@@ -44,7 +44,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# ESTILOS CSS + AVATAR DE GATITO ANIMADO EN CSS PURO
+# ESTILOS CSS REVOLUCIONARIOS
 # ==========================================
 st.markdown("""
     <style>
@@ -115,20 +115,19 @@ st.markdown("""
         box-shadow: 0px 6px 20px rgba(108, 60, 181, 0.1) !important; 
     }
 
-    /* TARJETA HOLOGRÁFICA EN NEÓN MALVA/LAVANDA ACORDE A LA PALETA */
+    /* TARJETA HOLOGRÁFICA Y AVATAR EN CSS PURO (SIN BLOQUES ESTORBOSOS) */
     .patu-holograma-box {
         background: linear-gradient(145deg, #FFFFFF 0%, #F3ECFA 100%) !important;
         border: 3px solid #7C42D1 !important;
         border-radius: 24px !important;
-        padding: 25px !important;
+        padding: 20px !important;
         text-align: center !important;
-        box-shadow: 0 0 25px rgba(124, 66, 209, 0.3) !important;
+        box-shadow: 0 0 25px rgba(124, 66, 209, 0.25) !important;
     }
 
-    /* DISEÑO Y ANIMACIÓN DEL GATITO BLANCO EN CSS PURO */
     .cat-avatar-container {
         width: 140px;
-        height: 140px;
+        height: 120px;
         margin: 0 auto;
         position: relative;
         animation: floatPatuNeon 2.5s infinite ease-in-out;
@@ -136,11 +135,11 @@ st.markdown("""
 
     .cat-head {
         width: 120px;
-        height: 100px;
+        height: 95px;
         background: #FFFFFF;
         border-radius: 50% 50% 45% 45%;
         position: absolute;
-        bottom: 10px;
+        bottom: 5px;
         left: 10px;
         border: 3px solid #7C42D1;
         box-shadow: 0 0 20px rgba(124, 66, 209, 0.4);
@@ -164,7 +163,7 @@ st.markdown("""
         background: #7C42D1;
         border-radius: 50%;
         position: absolute;
-        top: 35px;
+        top: 32px;
     }
     .cat-eye-left { left: 28px; }
     .cat-eye-right { right: 28px; }
@@ -175,17 +174,13 @@ st.markdown("""
         background: #FF85B8;
         border-radius: 50%;
         position: absolute;
-        top: 55px;
+        top: 52px;
         left: 55px;
     }
 
     @keyframes floatPatuNeon {
-        0%, 100% {
-            transform: translateY(0px) scale(1);
-        }
-        50% {
-            transform: translateY(-12px) scale(1.05);
-        }
+        0%, 100% { transform: translateY(0px) scale(1); }
+        50% { transform: translateY(-10px) scale(1.04); }
     }
 
     .badge-pro { 
@@ -421,17 +416,17 @@ else:
     st.write("---")
 
     # ==========================================
-    # MODO AGENTE DE VOZ AUTÓNOMO CON GATITO ILUSTRADO CSS
+    # MODO AGENTE DE VOZ AUTÓNOMO CON PATU AI LIMPIO
     # ==========================================
     if "PATU LIVE" in fase_seleccionada:
         st.subheader("🐾 Habla en Vivo con PATU (Agente de Voz Autónomo)")
-        st.caption("Desarrollado por Yordán Rugel Martínez & Grupo 2 | Curso: Gestión de Proyectos | Docente: Richard Edgar González")
+        st.caption("Háblale a PATU por micrófono, salúdalo, pídele ejecutar tareas clínicas o dile: 'Muestra tu poder'.")
 
         col_avatar, col_interaccion = st.columns([1, 2])
 
         with col_avatar:
             st.markdown('<div class="patu-holograma-box">', unsafe_allow_html=True)
-            # Avatar Ilustrado de Gatito Blanco en CSS Puro
+            # Avatar Ilustrado de Gatito Blanco en CSS
             st.markdown("""
                 <div class="cat-avatar-container">
                     <div class="cat-head">
@@ -444,7 +439,6 @@ else:
                 </div>
             """, unsafe_allow_html=True)
             st.markdown("<h3 style='margin-top:10px; color:#7C42D1;'><b>PATU AI</b></h3>", unsafe_allow_html=True)
-            st.markdown("<small style='color:#6C3CB5;'><b>Creadores:</b> Yordán Rugel M. & Grupo 2<br><b>Docente:</b> Richard Edgar González</small>", unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
 
         with col_interaccion:
@@ -469,7 +463,7 @@ else:
                             guardar_en_historial("PATU Agente Voz", str(comando_texto), respuesta_patu)
                             st.rerun()
 
-        # RESPUESTA Y VOZ SINTETIZADA CON PRONUNCIACIÓN PERFECTA "YORDÁN"
+        # RESPUESTA Y VOZ SINTETIZADA FLUIDA (SIN BLOQUEOS)
         if st.session_state.res_patu_live:
             st.markdown("---")
             st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
@@ -477,9 +471,10 @@ else:
             st.markdown(f"🐾 **PATU AI responde:**")
             st.markdown(st.session_state.res_patu_live['respuesta'])
             
-            # Síntesis hablada directa del navegador
-            texto_voz_limpio = st.session_state.res_patu_live['respuesta'].replace('"', "'").replace('\n', ' ').replace('#', '')
-            resumen_voz = ". ".join(texto_voz_limpio.split(".")[:3])
+            # Síntesis hablada optimizada (Máximo 2 oraciones para evitar trabas del navegador)
+            texto_voz_limpio = st.session_state.res_patu_live['respuesta'].replace('"', "'").replace('\n', ' ').replace('#', '').replace('*', '')
+            oraciones = [s.strip() for s in texto_voz_limpio.split('.') if len(s.strip()) > 5]
+            resumen_voz = ". ".join(oraciones[:2]) if len(oraciones) >= 2 else (oraciones[0] if len(oraciones) == 1 else "Proceso completado.")
             
             js_code = f"""
                 <script>
