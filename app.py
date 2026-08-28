@@ -28,7 +28,8 @@ from engine import (
     generar_genograma_familiar,
     generar_supervision_coterapeuta,
     generar_compromiso_vida,
-    generar_plan_tratamiento_psicologico
+    generar_plan_tratamiento_psicologico,
+    generar_hoja_trabajo_paciente
 )
 
 # ==========================================
@@ -46,24 +47,20 @@ st.set_page_config(
 # ==========================================
 st.markdown("""
     <style>
-    /* Fondo malva pastel continuo */
     .stApp { 
         background: linear-gradient(135deg, #F4EEFB 0%, #E9DEFA 100%) !important; 
         color: #3E2F56 !important; 
         font-family: 'Inter', -apple-system, sans-serif !important;
     }
     
-    /* Barra lateral */
     section[data-testid="stSidebar"] { 
         background: rgba(235, 224, 252, 0.95) !important; 
         border-right: 2px solid #D8C7F0 !important; 
     }
     
-    /* Encabezados */
     h1, h2, h3, h4, label, p, span, div { color: #3E2F56 !important; }
     h1, h2, h3 { color: #6C3CB5 !important; font-weight: 800 !important; }
     
-    /* Banner Principal */
     .header-banner {
         background: linear-gradient(120deg, #7C42D1 0%, #8A93FF 50%, #FF85B8 100%);
         padding: 22px 30px;
@@ -74,7 +71,6 @@ st.markdown("""
     }
     .header-banner h1, .header-banner p { color: white !important; margin: 0; }
     
-    /* Tarjeta Ficha del Paciente */
     .ficha-paciente-card {
         background: #EFE6FA !important;
         border: 2px solid #D1BFF0 !important;
@@ -84,7 +80,6 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(108, 60, 181, 0.08) !important;
     }
     
-    /* Botones Pastel Vibrantes */
     div.stButton > button { 
         background: linear-gradient(135deg, #8A93FF 0%, #7C42D1 100%) !important; 
         color: #FFFFFF !important; 
@@ -100,7 +95,6 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
-    /* Cajas de Insumos */
     .caja-paso {
         background: #FFFFFF !important;
         border: 1.5px solid #D8C7F0 !important;
@@ -110,7 +104,6 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0,0,0,0.03) !important;
     }
 
-    /* Contenedor de Resultados */
     .resultado-ia { 
         background-color: #FFFFFF !important; 
         padding: 26px !important; 
@@ -144,6 +137,7 @@ if "historial_consultas" not in st.session_state:
 if "caso_activo" not in st.session_state:
     st.session_state.caso_activo = False
 
+# Datos dinámicos del Paciente y Semáforo Terapéutico
 if "paciente_nombre" not in st.session_state:
     st.session_state.paciente_nombre = "Paciente Anónimo"
 if "paciente_edad" not in st.session_state:
@@ -152,12 +146,16 @@ if "paciente_etapa" not in st.session_state:
     st.session_state.paciente_etapa = "--"
 if "paciente_riesgo" not in st.session_state:
     st.session_state.paciente_riesgo = "Bajo"
+if "paciente_avance" not in st.session_state:
+    st.session_state.paciente_avance = 15
+if "paciente_semaforo" not in st.session_state:
+    st.session_state.paciente_semaforo = "🟡 Evaluación en Proceso"
 
 for res_key in [
     "res_analizador_clinico", "res_buscador_pruebas", "res_generador_informes",
     "res_analizador_sesiones", "res_psicoeducacion", "res_corrector_psicometrico",
-    "res_plan_tratamiento", "res_genograma", "res_coterapeuta", "res_compromiso_vida",
-    "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable", "doc_compromiso_descargable"
+    "res_plan_tratamiento", "res_genograma", "res_coterapeuta", "res_compromiso_vida", "res_hoja_trabajo",
+    "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable", "doc_compromiso_descargable", "doc_hoja_descargable"
 ]:
     if res_key not in st.session_state:
         st.session_state[res_key] = None
@@ -190,11 +188,13 @@ def limpiar_caso_actual():
     st.session_state.paciente_edad = "--"
     st.session_state.paciente_etapa = "--"
     st.session_state.paciente_riesgo = "Bajo"
+    st.session_state.paciente_avance = 15
+    st.session_state.paciente_semaforo = "🟡 Evaluación en Proceso"
     for res_key in [
         "res_analizador_clinico", "res_buscador_pruebas", "res_generador_informes",
         "res_analizador_sesiones", "res_psicoeducacion", "res_corrector_psicometrico",
-        "res_plan_tratamiento", "res_genograma", "res_coterapeuta", "res_compromiso_vida",
-        "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable", "doc_compromiso_descargable"
+        "res_plan_tratamiento", "res_genograma", "res_coterapeuta", "res_compromiso_vida", "res_hoja_trabajo",
+        "doc_informe_descargable", "doc_psico_descargable", "doc_plan_descargable", "doc_compromiso_descargable", "doc_hoja_descargable"
     ]:
         st.session_state[res_key] = None
     st.session_state.texto_narrativa = ""
@@ -276,18 +276,35 @@ else:
             </div>
         ''', unsafe_allow_html=True)
 
-    # FICHA EN VIVO DEL PACIENTE
+    # FICHA CON SEMÁFORO TERAPÉUTICO Y BARRA DE AVANCE (NUEVO)
     if st.session_state.caso_activo:
         color_riesgo = "#2ECC71" if st.session_state.paciente_riesgo == "Bajo" else "#F1C40F" if st.session_state.paciente_riesgo == "Medio" else "#E74C3C"
+        
+        # Ajustar estado del semáforo según porcentaje
+        if st.session_state.paciente_avance < 30:
+            st.session_state.paciente_semaforo = "🟡 Evaluación / Encuadre"
+        elif st.session_state.paciente_avance < 80:
+            st.session_state.paciente_semaforo = "🟢 Intervención Activa"
+        else:
+            st.session_state.paciente_semaforo = "🔵 Fase de Alta / Cierre"
+
         st.markdown(f'''
             <div class="ficha-paciente-card">
-                <div style="display:flex; justify-content:space-around; text-align:center;">
+                <div style="display:flex; justify-content:space-around; text-align:center; align-items:center;">
                     <div><small style="color:#6C3CB5; font-weight:bold;">PACIENTE ACTIVO</small><br><b>{st.session_state.paciente_nombre}</b></div>
                     <div><small style="color:#6C3CB5; font-weight:bold;">EDAD / ETAPA</small><br><b>{st.session_state.paciente_edad} años ({st.session_state.paciente_etapa})</b></div>
-                    <div><small style="color:#6C3CB5; font-weight:bold;">RIESGO DETECTADO</small><br><b style="color:{color_riesgo};">{st.session_state.paciente_riesgo}</b></div>
+                    <div><small style="color:#6C3CB5; font-weight:bold;">RIESGO INICIAL</small><br><b style="color:{color_riesgo};">{st.session_state.paciente_riesgo}</b></div>
+                    <div><small style="color:#6C3CB5; font-weight:bold;">SEMÁFORO TERAPÉUTICO</small><br><b>{st.session_state.paciente_semaforo}</b></div>
                 </div>
             </div>
         ''', unsafe_allow_html=True)
+        
+        # Slider interactivo para controlar avance de la terapia
+        col_av1, col_av2 = st.columns([4, 1])
+        with col_av1:
+            st.session_state.paciente_avance = st.slider("📊 Porcentaje de Avance y Adherencia del Paciente:", 0, 100, st.session_state.paciente_avance, help="Mueve el control para registrar la progresión en el tratamiento.")
+        with col_av2:
+            st.metric(label="Avance Clínico", value=f"{st.session_state.paciente_avance}%")
 
     # BARRA LATERAL
     with st.sidebar:
@@ -323,7 +340,7 @@ else:
         "📌 **Selecciona la Fase de Trabajo Clínico:**",
         [
             "🔬 FASE 1: Evaluación e Historial Familiar",
-            "🎯 FASE 2: Intervención, Sesiones y Co-Terapia",
+            "🎯 FASE 2: Intervención, Hojas de Trabajo y Co-Terapia",
             "📄 FASE 3: Redactor de Informes y Psicoeducación",
             "📂 Mi Historial en Nube"
         ],
@@ -337,12 +354,11 @@ else:
     if "FASE 1" in fase_seleccionada:
         st.subheader("🔬 Fase 1: Diagnóstico Multiaxial y Estructura Familiar")
         
-        # Botones estilo tarjetas directas
         col_m1, col_m2, col_m3 = st.columns(3)
         with col_m1:
             btn_mod1 = st.button("📋 1. Analizador Clínico & Riesgo", use_container_width=True)
         with col_m2:
-            btn_mod2 = st.button("🌳 2. Genograma Familiar (NUEVO)", use_container_width=True)
+            btn_mod2 = st.button("🌳 2. Genograma Familiar", use_container_width=True)
         with col_m3:
             btn_mod3 = st.button("🧪 3. Buscador de Pruebas & Baremos", use_container_width=True)
 
@@ -439,7 +455,7 @@ else:
                 st.markdown(st.session_state.res_analizador_clinico)
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # VISTA 1.2: GENOGRAMA FAMILIAR (VISIBILIZADO)
+        # VISTA 1.2: GENOGRAMA FAMILIAR
         elif st.session_state.sub_f1_active == "genograma":
             st.markdown("#### 🌳 Generador de Genograma y Dinámica Familiar")
             st.info("Escribe los miembros de la familia y el tipo de relación que mantienen para construir el genograma clínico.")
@@ -486,18 +502,20 @@ else:
                     st.markdown(st.session_state.res_corrector_psicometrico)
 
     # ==========================================
-    # FASE 2: INTERVENCIÓN Y SEGUIMIENTO
+    # FASE 2: INTERVENCIÓN Y HOJAS DE TRABAJO
     # ==========================================
     elif "FASE 2" in fase_seleccionada:
-        st.subheader("🎯 Fase 2: Plan Terapéutico, Sesiones y Co-Terapia")
+        st.subheader("🎯 Fase 2: Plan Terapéutico, Hojas de Trabajo y Co-Terapia")
         
-        col_f2_1, col_f2_2, col_f2_3 = st.columns(3)
+        col_f2_1, col_f2_2, col_f2_3, col_f2_4 = st.columns(4)
         with col_f2_1:
             btn_f2_mod1 = st.button("🎯 Plan de Tratamiento", use_container_width=True)
         with col_f2_2:
-            btn_f2_mod2 = st.button("🎙️ Analizador de Sesiones", use_container_width=True)
+            btn_f2_mod2 = st.button("📝 Hojas de Trabajo (NUEVO)", use_container_width=True)
         with col_f2_3:
-            btn_f2_mod3 = st.button("💬 Co-Terapeuta IA (NUEVO)", use_container_width=True)
+            btn_f2_mod3 = st.button("🎙️ Analizador de Sesiones", use_container_width=True)
+        with col_f2_4:
+            btn_f2_mod4 = st.button("💬 Co-Terapeuta IA", use_container_width=True)
 
         if "sub_f2_active" not in st.session_state:
             st.session_state.sub_f2_active = "plan"
@@ -505,10 +523,13 @@ else:
         if btn_f2_mod1:
             st.session_state.sub_f2_active = "plan"
         elif btn_f2_mod2:
-            st.session_state.sub_f2_active = "sesion"
+            st.session_state.sub_f2_active = "hojas"
         elif btn_f2_mod3:
+            st.session_state.sub_f2_active = "sesion"
+        elif btn_f2_mod4:
             st.session_state.sub_f2_active = "coterapeuta"
 
+        # VISTA 2.1: PLAN DE TRATAMIENTO
         if st.session_state.sub_f2_active == "plan":
             col_t1, col_t2 = st.columns(2)
             with col_t1:
@@ -532,6 +553,38 @@ else:
                 st.download_button("📥 Descargar Plan (.docx)", data=st.session_state.doc_plan_descargable, file_name=f"Plan_{st.session_state.paciente_nombre}.docx", key="dl_plan")
                 st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
                 st.markdown(st.session_state.res_plan_tratamiento)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        # VISTA 2.2: HOJAS DE TRABAJO Y REGISTROS DEL PACIENTE (NUEVO)
+        elif st.session_state.sub_f2_active == "hojas":
+            st.markdown("#### 📝 Generador de Hojas de Trabajo y Autorregistros para el Paciente")
+            st.info("Genera plantillas de tareas imprimibles listas para que el paciente las llene entre sesiones.")
+
+            col_h1, col_h2 = st.columns(2)
+            with col_h1:
+                tipo_hoja = st.selectbox("Selecciona el tipo de Autorregistro:", [
+                    "Registro TCC de Pensamientos Automáticos (S-P-E-C)",
+                    "Diario Terapéutico de Estado de Ánimo y Ansiedad",
+                    "Registro Conductual de Activación y Hábitos",
+                    "Hoja de Solución de Problemas y Toma de Decisiones",
+                    "Escala de Exposición Gradual a Miedos (Jerarquía)"
+                ], key="ht_tipo")
+            with col_h2:
+                meta_hoja = st.text_input("Diagnóstico o Meta del Paciente:", value=st.session_state.paciente_nombre if st.session_state.paciente_nombre != "Paciente Anónimo" else "", placeholder="Ej: Pánico, Insomnio, Afrontamiento...", key="ht_meta")
+
+            if st.button("📝 Generar Hoja de Trabajo Imprimible", key="btn_hoja"):
+                if meta_hoja.strip():
+                    with st.spinner("Diseñando registro práctico para el paciente..."):
+                        res_hoja = generar_hoja_trabajo_paciente(tipo_hoja, meta_hoja, api_key_env)
+                        st.session_state.res_hoja_trabajo = res_hoja
+                        st.session_state.doc_hoja_descargable = crear_documento_word(f"Hoja de Trabajo - {tipo_hoja}", res_hoja)
+                        guardar_en_historial("Hoja de Trabajo", f"{tipo_hoja} - {meta_hoja}", res_hoja)
+                        st.rerun()
+
+            if st.session_state.res_hoja_trabajo:
+                st.download_button("📥 Descargar Hoja para el Paciente (.docx)", data=st.session_state.doc_hoja_descargable, file_name=f"Registro_Paciente_{st.session_state.paciente_nombre}.docx", key="dl_hoja")
+                st.markdown('<div class="resultado-ia">', unsafe_allow_html=True)
+                st.markdown(st.session_state.res_hoja_trabajo)
                 st.markdown('</div>', unsafe_allow_html=True)
 
         elif st.session_state.sub_f2_active == "sesion":
